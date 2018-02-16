@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate failure;
 extern crate futures;
 extern crate hyper;
 #[macro_use]
@@ -9,6 +11,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tokio_core;
+extern crate validator;
+
+pub mod errors;
+pub mod request_util;
 
 use std::fmt;
 use std::mem;

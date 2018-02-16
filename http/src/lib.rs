@@ -27,11 +27,6 @@ use futures::sync::{mpsc, oneshot};
 use serde::de::Deserialize;
 use juniper::FieldError;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct JWTPayload {
-    pub user_id: i32,
-}
-
 pub type ClientResult = Result<String, Error>;
 pub type HyperClient = hyper::Client<hyper::client::HttpConnector>;
 
@@ -159,14 +154,14 @@ impl ClientHandle {
         method: hyper::Method,
         url: String,
         body: Option<String>,
-        token: Option<JWTPayload>,
+        auth_data: Option<String>,
     ) -> Box<Future<Item = T, Error = Error>>
     where
         T: for<'a> Deserialize<'a> + 'static,
     {
-        let headers = token.and_then(|t| {
+        let headers = auth_data.and_then(|s| {
             let mut headers = Headers::new();
-            headers.set(Authorization(t.user_id.to_string()));
+            headers.set(Authorization(s));
             Some(headers)
         });
         self.request(method, url, body, headers)

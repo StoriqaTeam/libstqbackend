@@ -4,8 +4,11 @@ use futures::prelude::*;
 use futures::future;
 use hyper;
 use serde_json;
+use std;
 
-use serde::de::Deserialize;
+use serde::{de::Deserialize, ser::Serialize};
+
+pub type ControllerFuture = Box<Future<Item = String, Error = errors::ControllerError>>;
 
 /// Transforms request body with the following pipeline:
 ///
@@ -36,4 +39,18 @@ pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::
         Ok(data) => future::ok(data),
         Err(err) => future::err(hyper::Error::Utf8(err.utf8_error())),
     }))
+}
+
+pub fn serialize_future<T, E, F>(f: F) -> ControllerFuture
+where
+    F: IntoFuture<Item = T, Error = E> + 'static,
+    E: 'static,
+    errors::ControllerError: std::convert::From<E>,
+    T: Serialize,
+{
+    Box::new(
+        f.into_future()
+            .map_err(errors::ControllerError::from)
+            .and_then(|resp| serde_json::to_string(&resp).map_err(|e| e.into())),
+    )
 }

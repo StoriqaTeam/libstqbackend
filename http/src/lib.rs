@@ -14,6 +14,7 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate validator;
 
+pub mod controller;
 pub mod errors;
 pub mod request_util;
 pub mod router;

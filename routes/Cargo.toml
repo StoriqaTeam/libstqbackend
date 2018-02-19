@@ -1,5 +1,5 @@
 [package]
-name = "stq_router"
+name = "stq_routes"
 version = "0.1.0"
 
 [dependencies]

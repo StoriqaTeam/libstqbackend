@@ -7,8 +7,7 @@ use hyper::header::{ContentLength, ContentType};
 use hyper::server::{Request, Response, Service};
 use serde_json;
 
-use ErrorMessage;
-use errors::ControllerError;
+use errors::{ControllerError, ErrorMessage};
 use request_util::ControllerFuture;
 
 pub trait Controller {

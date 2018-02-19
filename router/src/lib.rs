@@ -1,3 +1,5 @@
+extern crate regex;
+
 use regex::Regex;
 
 pub type ParamsConverter<T> = Box<Fn(Vec<&str>) -> Option<T>>;
@@ -20,7 +22,7 @@ impl<T> RouteParser<T> {
     /// #Examples
     ///
     /// ```
-    /// use stq_http::router::RouteParser;
+    /// use stq_router::RouteParser;
     ///
     /// #[derive(Debug)]
     /// pub enum Route {
@@ -45,7 +47,7 @@ impl<T> RouteParser<T> {
     /// #Examples
     ///
     /// ```
-    /// use stq_http::router::RouteParser;
+    /// use stq_router::RouteParser;
     ///
     /// #[derive(Debug)]
     /// pub enum Route {
@@ -73,7 +75,7 @@ impl<T> RouteParser<T> {
     /// #Examples
     ///
     /// ```
-    /// use stq_http::router::RouteParser;
+    /// use stq_router::RouteParser;
     ///
     /// #[derive(Debug, PartialEq)]
     /// pub enum Route {

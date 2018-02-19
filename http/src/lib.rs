@@ -6,7 +6,6 @@ extern crate hyper;
 extern crate juniper;
 #[macro_use]
 extern crate log;
-extern crate regex;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -17,7 +16,6 @@ extern crate validator;
 pub mod controller;
 pub mod errors;
 pub mod request_util;
-pub mod router;
 
 use std::fmt;
 use std::mem;

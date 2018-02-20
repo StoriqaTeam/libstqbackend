@@ -6,7 +6,8 @@ use hyper;
 use serde_json;
 use std;
 
-use serde::{de::Deserialize, ser::Serialize};
+use serde::de::Deserialize;
+use serde::ser::Serialize;
 
 pub type ControllerFuture = Box<Future<Item = String, Error = errors::ControllerError>>;
 

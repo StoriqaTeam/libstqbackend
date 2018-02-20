@@ -1,0 +1,9 @@
+[package]
+name = "stq_routes"
+version = "0.1.0"
+
+[dependencies]
+juniper = "0.9"
+regex = "0.2"
+serde = "1.0"
+serde_derive = "1.0"

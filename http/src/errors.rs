@@ -55,7 +55,6 @@ impl ControllerError {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorMessage {
     pub code: u16,

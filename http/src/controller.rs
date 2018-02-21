@@ -2,7 +2,7 @@ use failure::Fail;
 use futures::prelude::*;
 use futures::future;
 use hyper;
-use hyper::{Error, mime, StatusCode};
+use hyper::{mime, Error, StatusCode};
 use hyper::header::{ContentLength, ContentType};
 use hyper::server::{Request, Response, Service};
 use serde_json;

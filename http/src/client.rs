@@ -1,4 +1,3 @@
-
 use std::fmt;
 use std::mem;
 
@@ -149,8 +148,8 @@ impl ClientHandle {
         body: Option<String>,
         auth_data: Option<String>,
     ) -> Box<Future<Item = T, Error = Error>>
-        where
-            T: for<'a> Deserialize<'a> + 'static,
+    where
+        T: for<'a> Deserialize<'a> + 'static,
     {
         let headers = auth_data.and_then(|s| {
             let mut headers = Headers::new();
@@ -167,8 +166,8 @@ impl ClientHandle {
         body: Option<String>,
         headers: Option<Headers>,
     ) -> Box<Future<Item = T, Error = Error>>
-        where
-            T: for<'a> Deserialize<'a> + 'static,
+    where
+        T: for<'a> Deserialize<'a> + 'static,
     {
         Box::new(
             self.send_request_with_retries(method, url, body, headers, None, self.max_retries)

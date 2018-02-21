@@ -101,12 +101,18 @@ impl Client {
             .and_then(move |res| {
                 let status = res.status();
                 let body_future: Box<Future<Item = String, Error = Error>> = Box::new(Self::read_body(res.body()).map_err(Error::Network));
-                match status {
-                    hyper::StatusCode::Ok => body_future,
+                match status.as_u16() {
+                    200...299 => body_future,
 
                     _ => Box::new(body_future.and_then(move |body| {
                         let message = serde_json::from_str::<ErrorMessage>(&body).ok();
-                        let error = Error::Api(status, message);
+                        let error = Error::Api(
+                            status,
+                            message.or(Some(ErrorMessage {
+                                code: 422,
+                                message: body,
+                            })),
+                        );
                         future::err(error)
                     })),
                 }

@@ -277,7 +277,7 @@ struct Payload {
     pub callback: oneshot::Sender<ClientResult>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Fail)]
 pub enum Error {
     Api(hyper::StatusCode, Option<ErrorMessage>),
     Network(hyper::Error),

@@ -26,7 +26,7 @@ impl CurrencyGraphQl {
 }
 
 impl Currency {
-    pub fn as_vec(&self) -> Vec<CurrencyGraphQl> {
+    pub fn as_vec() -> Vec<CurrencyGraphQl> {
         vec![
             Currency::Rouble,
             Currency::Euro,

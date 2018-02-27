@@ -29,7 +29,7 @@ impl LanguageGraphQl {
 }
 
 impl Language {
-    pub fn as_vec(&self) -> Vec<LanguageGraphQl> {
+    pub fn as_vec() -> Vec<LanguageGraphQl> {
         vec![
             Language::English,
             Language::Chinese,

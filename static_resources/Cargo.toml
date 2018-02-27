@@ -1,0 +1,6 @@
+[package]
+name = "stq_static_resources"
+version = "0.1.0"
+
+[dependencies]
+juniper = "0.9"

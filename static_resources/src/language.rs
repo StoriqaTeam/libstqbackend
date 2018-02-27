@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use juniper::FieldError;
 
+#[derive(Copy, Clone)]
 pub enum Language {
     English = 1,
     Chinese,
@@ -13,6 +14,36 @@ pub enum Language {
     Korean,
     Portuguese,
     Japanese,
+}
+
+#[derive(GraphQLObject, Serialize, Deserialize, Debug)]
+pub struct LanguageGraphQl {
+    pub key: i32,
+    pub name: String,
+}
+
+impl LanguageGraphQl {
+    pub fn new(key: i32, name: String) -> Self {
+        Self { key, name }
+    }
+}
+
+impl Language {
+    pub fn as_vec(&self) -> Vec<LanguageGraphQl> {
+        vec![
+            Language::English,
+            Language::Chinese,
+            Language::German,
+            Language::Russian,
+            Language::Spanish,
+            Language::French,
+            Language::Korean,
+            Language::Portuguese,
+            Language::Japanese,
+        ].into_iter()
+            .map(|value| LanguageGraphQl::new(value as i32, value.to_string()))
+            .collect()
+    }
 }
 
 impl fmt::Display for Language {

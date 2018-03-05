@@ -123,7 +123,7 @@ impl Client {
         Box::new(task)
     }
 
-    fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error>> {
+    fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error> + Send> {
         Box::new(body.fold(Vec::new(), |mut acc, chunk| {
             acc.extend_from_slice(&*chunk);
             future::ok::<_, hyper::Error>(acc)
@@ -147,9 +147,9 @@ impl ClientHandle {
         url: String,
         body: Option<String>,
         auth_data: Option<String>,
-    ) -> Box<Future<Item = T, Error = Error>>
+    ) -> Box<Future<Item = T, Error = Error> + Send>
     where
-        T: for<'a> Deserialize<'a> + 'static,
+        T: for<'a> Deserialize<'a> + 'static + Send,
     {
         let headers = auth_data.and_then(|s| {
             let mut headers = Headers::new();
@@ -165,9 +165,9 @@ impl ClientHandle {
         url: String,
         body: Option<String>,
         headers: Option<Headers>,
-    ) -> Box<Future<Item = T, Error = Error>>
+    ) -> Box<Future<Item = T, Error = Error> + Send>
     where
-        T: for<'a> Deserialize<'a> + 'static,
+        T: for<'a> Deserialize<'a> + 'static + Send,
     {
         Box::new(
             self.send_request_with_retries(method, url, body, headers, None, self.max_retries)
@@ -183,7 +183,7 @@ impl ClientHandle {
         headers: Option<Headers>,
         last_err: Option<Error>,
         retries: usize,
-    ) -> Box<Future<Item = String, Error = Error>> {
+    ) -> Box<Future<Item = String, Error = Error> + Send> {
         if retries == 0 {
             let error = last_err.unwrap_or_else(|| Error::Unknown("Unexpected missing error in send_request_with_retries".to_string()));
             Box::new(future::err(error))
@@ -222,7 +222,7 @@ impl ClientHandle {
         url: String,
         body: Option<String>,
         headers: Option<hyper::Headers>,
-    ) -> Box<Future<Item = String, Error = Error>> {
+    ) -> Box<Future<Item = String, Error = Error> + Send> {
         info!(
             "Starting outbound http request: {} {} with body {} and headers {}",
             method,

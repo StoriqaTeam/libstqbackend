@@ -3,9 +3,9 @@ extern crate juniper;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate isolang;
 
-pub mod language;
 pub mod currency;
 
-pub use language::Language;
+pub use isolang::Language;
 pub use currency::Currency;

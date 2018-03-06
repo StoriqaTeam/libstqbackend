@@ -6,6 +6,7 @@ extern crate serde_derive;
 extern crate isolang;
 
 pub mod currency;
+pub mod language;
 
-pub use isolang::Language;
+pub use language::*;
 pub use currency::Currency;

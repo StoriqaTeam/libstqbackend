@@ -7,6 +7,7 @@ use juniper::FieldError;
 pub enum Service {
     Users,
     Stores,
+    Orders,
 }
 
 impl fmt::Display for Service {
@@ -14,6 +15,7 @@ impl fmt::Display for Service {
         match *self {
             Service::Users => write!(f, "users"),
             Service::Stores => write!(f, "stores"),
+            Service::Orders => write!(f, "orders"),
         }
     }
 }
@@ -25,6 +27,7 @@ impl FromStr for Service {
         match s {
             "users" => Ok(Service::Users),
             "stores" => Ok(Service::Stores),
+            "orders" => Ok(Service::Orders),
             _ => Err(FieldError::new(
                 "Unknown service",
                 graphql_value!({ "code": 300, "details": {

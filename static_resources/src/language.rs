@@ -64,7 +64,7 @@ impl Language {
     
 }
 
-#[derive(GraphQLInputObject, Serialize, Clone, Debug)]
+#[derive(GraphQLInputObject, Serialize, Clone, Debug, PartialEq)]
 #[graphql(description = "Text with language")]
 pub struct TranslationInput {
     #[graphql(description = "Language")]
@@ -74,7 +74,7 @@ pub struct TranslationInput {
 }
 
 
-#[derive(GraphQLObject, Deserialize, Clone, Debug)]
+#[derive(GraphQLObject, Deserialize, Clone, Debug, PartialEq)]
 #[graphql(description = "Text with language")]
 pub struct Translation {
     #[graphql(description = "Language")]

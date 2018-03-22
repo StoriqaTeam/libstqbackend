@@ -27,12 +27,17 @@ impl Service for Application {
     type Future = ServerFuture;
 
     fn call(&self, req: Request) -> ServerFuture {
-        info!("{:?}", req);
+        debug!("Received request: {:?}", req);
 
-        Box::new(self.controller.call(req).then(|res| match res {
-            Ok(data) => future::ok(Self::response_with_json(data)),
-            Err(err) => future::ok(Self::response_with_error(err)),
-        }))
+        Box::new(
+            self.controller
+                .call(req)
+                .then(|res| match res {
+                    Ok(data) => future::ok(Self::response_with_json(data)),
+                    Err(err) => future::ok(Self::response_with_error(err)),
+                })
+                .inspect(|resp| debug!("Sending response: {:?}", resp)),
+        )
     }
 }
 

@@ -9,15 +9,15 @@ use validator::ValidationErrors;
 pub enum ControllerError {
     #[fail(display = "Not found")]
     NotFound,
-    #[fail(display = "Parse error")]
+    #[fail(display = "Parse error: {}", _0)]
     Parse(String),
-    #[fail(display = "Bad request")]
+    #[fail(display = "Bad request: {}", _0)]
     BadRequest(Error),
     #[fail(display = "Validation error: {}", _0)]
     Validate(ValidationErrors),
-    #[fail(display = "Unprocessable entity")]
+    #[fail(display = "Unprocessable entity: {}", _0)]
     UnprocessableEntity(Error),
-    #[fail(display = "Internal server error")]
+    #[fail(display = "Internal server error: {}", _0)]
     InternalServerError(Error),
 }
 

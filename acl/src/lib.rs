@@ -7,7 +7,7 @@ extern crate r2d2_diesel;
 use diesel::pg::PgConnection;
 use r2d2_diesel::ConnectionManager;
 
-pub type DbConnection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
+pub type DbConnection = PgConnection;
 
 /// Implement this trait on resource to signal if it's in the current scope
 pub trait WithScope<Scope> {

@@ -65,7 +65,7 @@ impl<Resource, Action, Scope, Error> Acl<Resource, Action, Scope, Error> for Una
     }
 }
 
-pub trait RolesCache {
+pub trait RolesCache : Clone + Send + 'static {
     type Error;
     type Role;
 

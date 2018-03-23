@@ -5,7 +5,6 @@ extern crate r2d2;
 extern crate r2d2_diesel;
 
 use diesel::pg::PgConnection;
-use r2d2_diesel::ConnectionManager;
 
 pub type DbConnection = PgConnection;
 

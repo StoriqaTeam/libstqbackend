@@ -268,7 +268,7 @@ impl fmt::Display for Error {
                 status, error_message.code, error_message.message
             ),
             Error::Api(status, None) => write!(f, "Http client 100: Api error: status: {}", status),
-            Error::Network(ref err) => write!(f, "Http client 200: Network error: {:?}", err),
+            Error::Network(ref err) => write!(f, "Http client 200: Network error: {}", err),
             Error::Parse(ref err) => write!(f, "Http client 300: Parse error: {}", err),
             Error::Unknown(ref err) => write!(f, "Http client 400: Unknown error: {}", err),
         }

@@ -54,7 +54,7 @@ impl Application {
         if let Some(trace) = error.backtrace() {
             error!("Trace: {}", trace);
         }
-        error!("{:?}", error);
+        error!("{}", error);
         let mes = ErrorMessage {
             code: error.code().as_u16(),
             message: error.message(),

@@ -10,14 +10,14 @@ use r2d2_diesel::ConnectionManager;
 pub type DbConnection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 
 /// Implement this trait on resource to signal if it's in the current scope
-pub trait WithScope<Scope> {
-    fn is_in_scope(&self, scope: &Scope, user_id: i32, conn: Option<&DbConnection>) -> bool;
+pub trait CheckScope<Scope, T> {
+    fn is_in_scope(&self, user_id: i32, scope: &Scope, obj: Option<&T>) -> bool;
 }
 
 /// Access control layer for repos. It tells if a user can do a certain action with
 /// certain resource. All logic for roles and permissions should be hardcoded into implementation
 /// of this trait.
-pub trait Acl<Resource, Action, Scope, Error> {
+pub trait Acl<Resource, Action, Scope, Error, T> {
     /// Tells if a user with id `user_id` can do `action` on `resource`.
     /// `resource_with_scope` can tell if this resource is in some scope, which is also a part of `acl` for some
     /// permissions. E.g. You can say that a user can do `Create` (`Action`) on `Store` (`Resource`) only if he's the
@@ -26,8 +26,8 @@ pub trait Acl<Resource, Action, Scope, Error> {
         &self,
         resource: &Resource,
         action: &Action,
-        resources_with_scope: &[&WithScope<Scope>],
-        conn: Option<&DbConnection>,
+        scope_checker: &CheckScope<Scope,T>,
+        obj: Option<&T>,
     ) -> Result<bool, Error>;
 }
 
@@ -36,13 +36,13 @@ pub trait Acl<Resource, Action, Scope, Error> {
 pub struct SystemACL {}
 
 #[allow(unused)]
-impl<Resource, Action, Scope, Error> Acl<Resource, Action, Scope, Error> for SystemACL {
+impl<Resource, Action, Scope, Error, T> Acl<Resource, Action, Scope, Error, T> for SystemACL {
     fn allows(
         &self,
         resource: &Resource,
         action: &Action,
-        resources_with_scope: &[&WithScope<Scope>],
-        conn: Option<&DbConnection>,
+        scope_checker: &CheckScope<Scope,T>,
+        obj: Option<&T>,
     ) -> Result<bool, Error> {
         Ok(true)
     }
@@ -53,23 +53,24 @@ impl<Resource, Action, Scope, Error> Acl<Resource, Action, Scope, Error> for Sys
 pub struct UnauthorizedACL {}
 
 #[allow(unused)]
-impl<Resource, Action, Scope, Error> Acl<Resource, Action, Scope, Error> for UnauthorizedACL {
+impl<Resource, Action, Scope, Error, T> Acl<Resource, Action, Scope, Error, T> for UnauthorizedACL {
     fn allows(
         &self,
         resource: &Resource,
         action: &Action,
-        resources_with_scope: &[&WithScope<Scope>],
-        conn: Option<&DbConnection>,
+        scope_checker: &CheckScope<Scope,T>,
+        obj: Option<&T>,
     ) -> Result<bool, Error> {
         Ok(false)
     }
 }
 
-pub trait RolesCache {
-    type Error;
+pub trait RolesCache : Clone + Send + 'static {
     type Role;
 
-    fn get(&self, id: i32, db_conn: Option<&DbConnection>) -> Result<Vec<Self::Role>, Self::Error>;
-    fn clear(&self) -> Result<(), Self::Error>;
-    fn remove(&self, id: i32) -> Result<(), Self::Error>;
+    fn get(&self, user_id: i32) -> Vec<Self::Role>;
+    fn clear(&self);
+    fn remove(&self, user_id: i32);
+    fn contains(&self, user_id: i32) -> bool;
+    fn add_roles(&self, user_id: i32, roles: &Vec<Self::Role>);
 }

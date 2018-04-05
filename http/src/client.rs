@@ -6,6 +6,7 @@ use futures::future;
 use futures::sync::{mpsc, oneshot};
 use hyper::header::{Authorization, Headers};
 use hyper;
+use hyper_tls::HttpsConnector;
 use juniper::FieldError;
 use serde::de::Deserialize;
 use serde_json;
@@ -14,7 +15,7 @@ use tokio_core::reactor::Handle;
 use errors::ErrorMessage;
 
 pub type ClientResult = Result<String, Error>;
-pub type HyperClient = hyper::Client<hyper::client::HttpConnector>;
+pub type HyperClient = hyper::Client<HttpsConnector<hyper::client::HttpConnector>>;
 
 pub struct Config {
     pub http_client_retries: usize,
@@ -32,7 +33,9 @@ impl Client {
     pub fn new(config: &Config, handle: &Handle) -> Self {
         let max_retries = config.http_client_retries;
         let (tx, rx) = mpsc::channel::<Payload>(config.http_client_buffer_size);
-        let client = hyper::Client::configure().build(handle);
+        let client = hyper::Client::configure()
+            .connector(HttpsConnector::new(4, &handle).unwrap())
+            .build(handle);
 
         Client {
             client,

@@ -1,7 +1,7 @@
 use errors;
 
-use futures::prelude::*;
 use futures::future;
+use futures::prelude::*;
 use hyper;
 use serde_json;
 use std;

@@ -1,11 +1,11 @@
 use std::fmt;
 use std::mem;
 
-use futures::prelude::*;
 use futures::future;
+use futures::prelude::*;
 use futures::sync::{mpsc, oneshot};
-use hyper::header::{Authorization, Headers};
 use hyper;
+use hyper::header::{Authorization, Headers};
 use hyper_tls::HttpsConnector;
 use juniper::FieldError;
 use serde::de::Deserialize;

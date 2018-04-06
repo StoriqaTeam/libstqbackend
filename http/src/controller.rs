@@ -1,10 +1,10 @@
 use failure::Fail;
-use futures::prelude::*;
 use futures::future;
+use futures::prelude::*;
 use hyper;
-use hyper::{mime, Error, StatusCode};
 use hyper::header::{ContentLength, ContentType};
 use hyper::server::{Request, Response, Service};
+use hyper::{mime, Error, StatusCode};
 use serde_json;
 
 use errors::{ControllerError, ErrorMessage};

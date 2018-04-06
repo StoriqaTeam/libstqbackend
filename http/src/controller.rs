@@ -2,7 +2,7 @@ use failure::Fail;
 use futures::future;
 use futures::prelude::*;
 use hyper;
-use hyper::header::{ContentLength, ContentType};
+use hyper::header::{AccessControlAllowOrigin, ContentLength, ContentType};
 use hyper::server::{Request, Response, Service};
 use hyper::{mime, Error, StatusCode};
 use serde_json;
@@ -18,6 +18,7 @@ pub type ServerFuture = Box<Future<Item = Response, Error = hyper::Error>>;
 
 pub struct Application {
     pub controller: Box<Controller>,
+    pub acao: AccessControlAllowOrigin,
 }
 
 impl Service for Application {
@@ -32,9 +33,12 @@ impl Service for Application {
         Box::new(
             self.controller
                 .call(req)
-                .then(|res| match res {
-                    Ok(data) => future::ok(Self::response_with_json(data)),
-                    Err(err) => future::ok(Self::response_with_error(err)),
+                .then({
+                    let acao = self.acao.clone();
+                    |res| match res {
+                        Ok(data) => future::ok(Self::response_with_json(data, acao)),
+                        Err(err) => future::ok(Self::response_with_error(err, acao)),
+                    }
                 })
                 .inspect(|resp| debug!("Sending response: {:?}", resp)),
         )
@@ -42,15 +46,38 @@ impl Service for Application {
 }
 
 impl Application {
+    pub fn new<T>(controller: T) -> Self
+    where
+        T: Controller + 'static,
+    {
+        Self {
+            controller: Box::new(controller),
+            acao: AccessControlAllowOrigin::Any,
+        }
+    }
+
+    pub fn with_controller<T>(mut self, controller: T) -> Self
+    where
+        T: Controller + 'static,
+    {
+        self.controller = Box::new(controller);
+        self
+    }
+
+    pub fn with_acao(mut self, acao: AccessControlAllowOrigin) -> Self {
+        self.acao = acao;
+        self
+    }
+
     /// Responds with JSON, logs response body
-    fn response_with_json(body: String) -> Response {
+    fn response_with_json(body: String, acao: AccessControlAllowOrigin) -> Response {
         info!("{}", body);
 
-        Self::response_with_body(body)
+        Self::response_with_body(body, acao)
     }
 
     /// Responds with JSON error, logs response body
-    fn response_with_error(error: ControllerError) -> Response {
+    fn response_with_error(error: ControllerError, acao: AccessControlAllowOrigin) -> Response {
         if let Some(trace) = error.backtrace() {
             error!("Trace: {}", trace);
         }
@@ -60,13 +87,14 @@ impl Application {
             message: error.message(),
         };
         let mes = serde_json::to_string(&mes).unwrap();
-        Self::response_with_body(mes).with_status(error.code())
+        Self::response_with_body(mes, acao).with_status(error.code())
     }
 
-    fn response_with_body(body: String) -> Response {
+    fn response_with_body(body: String, acao: AccessControlAllowOrigin) -> Response {
         Response::new()
             .with_header(ContentLength(body.len() as u64))
             .with_header(ContentType(mime::APPLICATION_JSON))
+            .with_header(acao)
             .with_status(StatusCode::Ok)
             .with_body(body)
     }

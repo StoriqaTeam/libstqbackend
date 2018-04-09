@@ -84,7 +84,7 @@ impl Application {
         error!("{}", error);
         let mes = ErrorMessage {
             code: error.code().as_u16(),
-            message: error.message(),
+            message: error.to_string(),
         };
         let mes = serde_json::to_string(&mes).unwrap();
         Self::response_with_body(mes, acao).with_status(error.code())

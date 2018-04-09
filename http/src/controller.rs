@@ -2,10 +2,13 @@ use failure::Fail;
 use futures::future;
 use futures::prelude::*;
 use hyper;
-use hyper::header::{AccessControlAllowOrigin, ContentLength, ContentType};
+use hyper::Method::{Get, Options, Post};
+use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin, AccessControlRequestHeaders,
+                    ContentLength, ContentType};
 use hyper::server::{Request, Response, Service};
-use hyper::{mime, Error, StatusCode};
+use hyper::{mime, Error, Headers, StatusCode};
 use serde_json;
+use std;
 
 use errors::{ControllerError, ErrorMessage};
 use request_util::ControllerFuture;
@@ -30,18 +33,37 @@ impl Service for Application {
     fn call(&self, req: Request) -> ServerFuture {
         debug!("Received request: {:?}", req);
 
-        Box::new(
-            self.controller
-                .call(req)
-                .then({
-                    let acao = self.acao.clone();
-                    |res| match res {
-                        Ok(data) => future::ok(Self::response_with_json(data, acao)),
-                        Err(err) => future::ok(Self::response_with_error(err, acao)),
-                    }
-                })
-                .inspect(|resp| debug!("Sending response: {:?}", resp)),
-        )
+        match req.method() {
+            &Options => {
+                let req_headers = req.headers().clone();
+                let acah = req_headers.get::<AccessControlRequestHeaders>();
+
+                let mut resp = Response::new();
+                let mut new_headers = Headers::new();
+                new_headers.set(self.acao.clone());
+                new_headers.set(AccessControlAllowMethods(vec![Get, Post, Options]));
+                if let Some(a) = acah {
+                    new_headers.set(AccessControlAllowHeaders(a.to_vec()));
+                };
+                new_headers.set(ContentType(mime::TEXT_HTML));
+
+                std::mem::replace(resp.headers_mut(), new_headers);
+
+                Box::new(future::ok(resp))
+            }
+            _ => Box::new(
+                self.controller
+                    .call(req)
+                    .then({
+                        let acao = self.acao.clone();
+                        |res| match res {
+                            Ok(data) => future::ok(Self::response_with_json(data, acao)),
+                            Err(err) => future::ok(Self::response_with_error(err, acao)),
+                        }
+                    })
+                    .inspect(|resp| debug!("Sending response: {:?}", resp)),
+            ),
+        }
     }
 }
 

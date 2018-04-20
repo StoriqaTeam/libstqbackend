@@ -19,6 +19,8 @@ pub enum ControllerError {
     UnprocessableEntity(Error),
     #[fail(display = "Internal server error: {}", _0)]
     InternalServerError(Error),
+    #[fail(display = "Server is refusing to fullfil the reqeust: {}", _0)]
+    Forbidden(Error),
 }
 
 impl From<serde_json::error::Error> for ControllerError {
@@ -37,6 +39,7 @@ impl ControllerError {
             ControllerError::Parse(_) | ControllerError::BadRequest(_) | ControllerError::Validate(_) => StatusCode::BadRequest,
             ControllerError::UnprocessableEntity(_) => StatusCode::UnprocessableEntity,
             ControllerError::InternalServerError(_) => StatusCode::InternalServerError,
+            ControllerError::Forbidden(_) => StatusCode::Forbidden,
         }
     }
 }

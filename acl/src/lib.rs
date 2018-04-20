@@ -1,14 +1,5 @@
 //! This crate provides common ACL facilities, namely the common groups and traits.
 
-extern crate diesel;
-extern crate r2d2;
-extern crate r2d2_diesel;
-
-use diesel::pg::PgConnection;
-use r2d2_diesel::ConnectionManager;
-
-pub type DbConnection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
-
 /// Implement this trait on resource to signal if it's in the current scope
 pub trait CheckScope<Scope, T> {
     fn is_in_scope(&self, user_id: i32, scope: &Scope, obj: Option<&T>) -> bool;

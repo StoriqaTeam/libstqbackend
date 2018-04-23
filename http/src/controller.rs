@@ -2,10 +2,10 @@ use failure::Fail;
 use futures::future;
 use futures::prelude::*;
 use hyper;
-use hyper::Method::{Get, Options, Post};
 use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlAllowOrigin, AccessControlRequestHeaders,
                     ContentLength, ContentType};
 use hyper::server::{Request, Response, Service};
+use hyper::Method::{Get, Options, Post};
 use hyper::{mime, Error, Headers, StatusCode};
 use serde_json;
 use std;

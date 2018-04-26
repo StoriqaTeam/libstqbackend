@@ -42,6 +42,21 @@ impl ControllerError {
             ControllerError::Forbidden(_) => StatusCode::Forbidden,
         }
     }
+
+    /// Converts `Error` to string
+    pub fn message(&self) -> String {
+        match *self {
+            ControllerError::NotFound => "Not found".to_string(),
+            ControllerError::Parse(_) | ControllerError::BadRequest(_) => "Bad request".to_string(),
+            ControllerError::Validate(ref valid_err) => match serde_json::to_string(valid_err) {
+                Ok(res) => res,
+                Err(_) => "Bad request".to_string(),
+            },
+            ControllerError::UnprocessableEntity(_) => "Unprocessable entity".to_string(),
+            ControllerError::InternalServerError(_) => "Internal server error".to_string(),
+            ControllerError::Forbidden(_) => "Forbidden".to_string(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

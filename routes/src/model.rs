@@ -15,7 +15,8 @@ pub enum Model {
     UserRoles,
     Attribute,
     Category,
-    CartProduct
+    CartProduct,
+    CartStore,
 }
 
 impl fmt::Display for Model {
@@ -30,6 +31,7 @@ impl fmt::Display for Model {
             Model::Attribute => write!(f, "attribute"),
             Model::Category => write!(f, "category"),
             Model::CartProduct => write!(f, "cart_product"),
+            Model::CartStore => write!(f, "cart_store"),
         }
     }
 }
@@ -48,6 +50,7 @@ impl FromStr for Model {
             "attribute" => Ok(Model::Attribute),
             "category" => Ok(Model::Category),
             "cart_product" => Ok(Model::CartProduct),
+            "cart_store" => Ok(Model::CartStore),
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
@@ -70,6 +73,7 @@ impl Model {
             Model::Attribute => "attributes".to_string(),
             Model::Category => "categories".to_string(),
             Model::CartProduct => "cart_products".to_string(),
+            Model::CartStore => "cart_store".to_string(),
         }
     }
 }

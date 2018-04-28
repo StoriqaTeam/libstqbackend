@@ -116,7 +116,7 @@ impl InsertBuilder {
             query.push_str(&format!(" {}", &self.extra));
         }
 
-        query.push(';');
+        query.push_str(" RETURNING *;");
 
         (query, args)
     }
@@ -196,7 +196,7 @@ impl UpdateBuilder {
             query.push_str(&format!(" {}", self.extra));
         }
 
-        query.push(';');
+        query.push_str(" RETURNING *;");
 
         let args = std::iter::Iterator::chain(values.into_iter(), filters.into_iter()).collect::<Vec<Box<ToSql + Send + 'static>>>();
 
@@ -218,7 +218,7 @@ mod tests {
             .build();
 
         let expectation = (
-            "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3, filter_column2 = $4;",
+            "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3, filter_column2 = $4 RETURNING *;",
             vec!["a", "b", "c", "d"]
                 .into_iter()
                 .map(|v| Box::new(v) as Box<ToSql + Send + 'static>)

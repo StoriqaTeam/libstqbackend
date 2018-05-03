@@ -2,7 +2,7 @@ use std;
 use tokio_postgres::types::ToSql;
 
 /// Filtering operation
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FilteredOperation {
     Select,
     Delete,
@@ -60,7 +60,7 @@ impl FilteredOperationBuilder {
             query.push_str(&format!("{} = ${}", col, i + 1));
             args.push(arg);
         }
-        let out = format!("{} {};", &query, self.extra);
+        let out = format!("{} {}{};", &query, self.extra, if self.op == FilteredOperation::Delete { " RETURNING *"} else { "" });
 
         (out, args)
     }

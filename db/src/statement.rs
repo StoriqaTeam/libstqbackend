@@ -182,7 +182,7 @@ impl UpdateBuilder {
             if filter_string.is_empty() {
                 filter_string.push_str("WHERE ");
             } else {
-                filter_string.push_str(", ");
+                filter_string.push_str(" AND ");
             }
 
             filter_string.push_str(&format!("{} = ${}", col, arg_index));
@@ -218,7 +218,7 @@ mod tests {
             .build();
 
         let expectation = (
-            "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3, filter_column2 = $4 RETURNING *;",
+            "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3 AND filter_column2 = $4 RETURNING *;",
             vec!["a", "b", "c", "d"]
                 .into_iter()
                 .map(|v| Box::new(v) as Box<ToSql + Send + 'static>)

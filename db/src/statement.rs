@@ -1,4 +1,5 @@
 use std;
+use std::collections::BTreeMap;
 use tokio_postgres::types::ToSql;
 
 /// Filtering operation
@@ -13,7 +14,7 @@ pub struct FilteredOperationBuilder {
     op: FilteredOperation,
     table: &'static str,
     extra: &'static str,
-    args: Vec<(&'static str, Box<ToSql + Send + 'static>)>,
+    args: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
 }
 
 impl FilteredOperationBuilder {
@@ -29,7 +30,7 @@ impl FilteredOperationBuilder {
 
     /// Add filtering arguments
     pub fn with_arg<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
-        self.args.push((column, Box::new(value)));
+        self.args.insert(column, Box::new(value));
         self
     }
 
@@ -60,7 +61,16 @@ impl FilteredOperationBuilder {
             query.push_str(&format!("{} = ${}", col, i + 1));
             args.push(arg);
         }
-        let out = format!("{} {}{};", &query, self.extra, if self.op == FilteredOperation::Delete { " RETURNING *"} else { "" });
+        let out = format!(
+            "{} {}{};",
+            &query,
+            self.extra,
+            if self.op == FilteredOperation::Delete {
+                " RETURNING *"
+            } else {
+                ""
+            }
+        );
 
         (out, args)
     }
@@ -70,7 +80,7 @@ impl FilteredOperationBuilder {
 pub struct InsertBuilder {
     table: &'static str,
     extra: &'static str,
-    values: Vec<(String, Box<ToSql + Send + 'static>)>,
+    values: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
 }
 
 impl InsertBuilder {
@@ -83,7 +93,7 @@ impl InsertBuilder {
     }
 
     pub fn with_arg<V: ToSql + Send + 'static>(mut self, k: &'static str, v: V) -> Self {
-        self.values.push((k.into(), Box::new(v)));
+        self.values.insert(k, Box::new(v));
         self
     }
 
@@ -125,8 +135,8 @@ impl InsertBuilder {
 pub struct UpdateBuilder {
     table: &'static str,
     extra: &'static str,
-    values: Vec<(&'static str, Box<ToSql + Send + 'static>)>,
-    filters: Vec<(&'static str, Box<ToSql + Send + 'static>)>,
+    values: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
+    filters: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
 }
 
 impl UpdateBuilder {
@@ -141,13 +151,13 @@ impl UpdateBuilder {
 
     /// Add filtering arguments
     pub fn with_filter<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
-        self.filters.push((column, Box::new(value)));
+        self.filters.insert(column, Box::new(value));
         self
     }
 
     /// Add values to set
     pub fn with_value<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
-        self.values.push((column, Box::new(value)));
+        self.values.insert(column, Box::new(value));
         self
     }
 

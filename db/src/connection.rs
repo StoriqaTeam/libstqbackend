@@ -43,8 +43,13 @@ where
         params: Vec<Box<ToSql + Send>>,
     ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E> + Send> {
         Box::new(
-            self.query(statement, &params.iter().map(|v| &**v as &ToSql).collect::<Vec<&ToSql>>())
-                .map_err(E::from)
+            self.query(
+                statement,
+                &params
+                    .iter()
+                    .map(|v| &**v as &ToSql)
+                    .collect::<Vec<&ToSql>>(),
+            ).map_err(E::from)
                 .map_state(|conn| Box::new(conn) as BoxedConnection<E>),
         )
     }
@@ -80,8 +85,13 @@ where
         params: Vec<Box<ToSql + Send>>,
     ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E> + Send> {
         Box::new(
-            self.query(statement, &params.iter().map(|v| &**v as &ToSql).collect::<Vec<&ToSql>>())
-                .map_err(E::from)
+            self.query(
+                statement,
+                &params
+                    .iter()
+                    .map(|v| &**v as &ToSql)
+                    .collect::<Vec<&ToSql>>(),
+            ).map_err(E::from)
                 .map_state(|conn| Box::new(conn) as BoxedConnection<E>),
         )
     }

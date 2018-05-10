@@ -3,6 +3,7 @@ name = "stq_db"
 version = "0.1.0"
 
 [dependencies]
+failure = "0.1"
 futures = "0.1"
 futures-state-stream = "0.2"
 postgres = { git = "https://github.com/StoriqaTeam/rust-postgres" }

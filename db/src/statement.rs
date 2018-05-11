@@ -14,7 +14,7 @@ pub struct FilteredOperationBuilder {
     op: FilteredOperation,
     table: &'static str,
     extra: &'static str,
-    args: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
+    filters: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
 }
 
 impl FilteredOperationBuilder {
@@ -24,13 +24,13 @@ impl FilteredOperationBuilder {
             op,
             table,
             extra: Default::default(),
-            args: Default::default(),
+            filters: Default::default(),
         }
     }
 
     /// Add filtering arguments
     pub fn with_arg<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
-        self.args.insert(column, Box::new(value));
+        self.filters.insert(column, Box::new(value));
         self
     }
 
@@ -52,7 +52,7 @@ impl FilteredOperationBuilder {
             self.table
         );
 
-        for (i, (col, arg)) in self.args.into_iter().enumerate() {
+        for (i, (col, arg)) in self.filters.into_iter().enumerate() {
             if i == 0 {
                 query.push_str(" WHERE ");
             } else {
@@ -211,6 +211,17 @@ impl UpdateBuilder {
         let args = std::iter::Iterator::chain(values.into_iter(), filters.into_iter()).collect::<Vec<Box<ToSql + Send + 'static>>>();
 
         (query, args)
+    }
+}
+
+impl From<FilteredOperationBuilder> for UpdateBuilder {
+    fn from(v: FilteredOperationBuilder) -> Self {
+        Self {
+            table: v.table,
+            extra: v.extra,
+            filters: v.filters,
+            values: Default::default(),
+        }
     }
 }
 

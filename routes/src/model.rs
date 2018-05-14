@@ -19,6 +19,8 @@ pub enum Model {
     CartStore,
     SearchCategory,
     WizardStore,
+    ModeratorProductComment,
+    ModeratorStoreComment,
 }
 
 impl fmt::Display for Model {
@@ -36,6 +38,8 @@ impl fmt::Display for Model {
             Model::CartStore => write!(f, "cart_store"),
             Model::SearchCategory => write!(f, "search_category"),
             Model::WizardStore => write!(f, "wizard_store"),
+            Model::ModeratorProductComment => write!(f, "moderator_product_comment"),
+            Model::ModeratorStoreComment => write!(f, "moderator_store_comment"),
         }
     }
 }
@@ -57,6 +61,8 @@ impl FromStr for Model {
             "cart_store" => Ok(Model::CartStore),
             "search_category" => Ok(Model::SearchCategory),
             "wizard_store" => Ok(Model::WizardStore),
+            "moderator_product_comment" => Ok(Model::ModeratorProductComment),
+            "moderator_store_comment" => Ok(Model::ModeratorStoreComment),
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
@@ -82,6 +88,8 @@ impl Model {
             Model::CartStore => "cart_store".to_string(),
             Model::SearchCategory => "search_category".to_string(),
             Model::WizardStore => "wizard_stores".to_string(),
+            Model::ModeratorProductComment => "moderator_product_comments".to_string(),
+            Model::ModeratorStoreComment => "moderator_store_comments".to_string(),
         }
     }
 }

@@ -4,8 +4,7 @@ use super::statement::*;
 use failure;
 use futures::*;
 use futures_state_stream::*;
-use std::marker::PhantomData;
-use tokio_postgres;
+use tokio_postgres::rows::Row;
 
 pub trait Filter {
     fn into_filtered_operation_builder(self, op: FilteredOperation, table: &'static str) -> FilteredOperationBuilder;
@@ -19,11 +18,41 @@ pub trait Updater {
     fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
 }
 
-pub trait DbRepo<T, N: Inserter, F: Filter, U: Updater, E> {
-    fn create(&self, conn: BoxedConnection<E>, inserter: N) -> ConnectionFuture<T, E>;
-    fn get(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum InsertError {
+    NoData,
+}
+
+pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Send + 'static>
+     {
+    fn insert(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<Vec<T>, E>;
+
+    fn insert_exactly_one(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<T, E> {
+        Box::new(
+            self.insert(conn, inserter)
+                .and_then(|(mut data, conn)| match data.pop() {
+                    Some(v) => Ok((v, conn)),
+                    None => Err((E::from(InsertError::NoData), conn)),
+                }),
+        )
+    }
+}
+
+pub trait DbRepoSelect<T: Send, F: Filter, E: Send> {
+    fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+}
+
+pub trait DbRepoUpdate<T: Send, U: Updater, E: Send> {
     fn update(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<Vec<T>, E>;
-    fn remove(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+}
+
+pub trait DbRepoDelete<T: Send, F: Filter, E: Send> {
+    fn delete(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+}
+
+pub trait DbRepo<T: Send + 'static, I: Inserter, F: Filter, U: Updater, E: From<InsertError> + Send + 'static>
+    : DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoUpdate<T, U, E> + DbRepoDelete<T, F, E>
+    {
 }
 
 pub type RepoError = failure::Error;
@@ -31,54 +60,47 @@ pub type RepoFuture<T> = Box<Future<Item = T, Error = RepoError>>;
 pub type RepoConnection = BoxedConnection<RepoError>;
 pub type RepoConnectionFuture<T> = ConnectionFuture<T, RepoError>;
 
-#[derive(Clone, Debug)]
-pub struct DbRepoImpl<T, N, F, U> {
-    pub table: &'static str,
-    t_type: PhantomData<T>,
-    n_type: PhantomData<N>,
-    f_type: PhantomData<F>,
-    u_type: PhantomData<U>,
-}
-
-impl<T, N, F, U> DbRepoImpl<T, N, F, U> {
-    pub fn new(table: &'static str) -> Self {
-        Self {
-            table,
-            t_type: Default::default(),
-            n_type: Default::default(),
-            f_type: Default::default(),
-            u_type: Default::default(),
+impl From<InsertError> for RepoError {
+    fn from(v: InsertError) -> Self {
+        match v {
+            InsertError::NoData => format_err!("Insert operation returned no data")
         }
     }
 }
 
-impl<T, N, F, U> DbRepo<T, N, F, U, RepoError> for DbRepoImpl<T, N, F, U>
+#[derive(Clone, Debug)]
+pub struct DbRepoImpl {
+    pub table: &'static str,
+}
+
+impl DbRepoImpl {
+    pub fn new(table: &'static str) -> Self {
+        Self { table }
+    }
+}
+
+impl<T, N> DbRepoInsert<T, N, RepoError> for DbRepoImpl
 where
-    T: From<tokio_postgres::rows::Row> + Send + 'static,
+    T: From<Row> + Send + 'static,
     N: Inserter + Send,
-    F: Filter + Send,
-    U: Updater + Send,
 {
-    fn create(&self, conn: RepoConnection, new_item: N) -> RepoConnectionFuture<T> {
-        let (statement, args) = new_item.into_insert_builder(self.table).build();
+    fn insert(&self, conn: RepoConnection, inserter: N) -> RepoConnectionFuture<Vec<T>> {
+        let (statement, args) = inserter.into_insert_builder(self.table).build();
 
         Box::new(
             conn.prepare2(&statement)
                 .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                .and_then({
-                    let statement = statement.clone();
-                    move |(mut rows, conn)| match rows.pop() {
-                        Some(row) => Ok((T::from(row), conn)),
-                        None => Err((
-                            format_err!("Insert op returned no rows: statement: {}", &statement),
-                            conn,
-                        )),
-                    }
-                }),
+                .map(move |(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<_>>(), conn)),
         )
     }
+}
 
-    fn get(&self, conn: RepoConnection, mask: F) -> RepoConnectionFuture<Vec<T>> {
+impl<T, F> DbRepoSelect<T, F, RepoError> for DbRepoImpl
+where
+    T: From<Row> + Send + 'static,
+    F: Filter + Send,
+{
+    fn select(&self, conn: RepoConnection, mask: F) -> RepoConnectionFuture<Vec<T>> {
         let (statement, args) = mask.into_filtered_operation_builder(FilteredOperation::Select, self.table)
             .build();
 
@@ -88,7 +110,13 @@ where
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn)),
         )
     }
+}
 
+impl<T, U> DbRepoUpdate<T, U, RepoError> for DbRepoImpl
+where
+    T: From<Row> + Send + 'static,
+    U: Updater + Send,
+{
     fn update(&self, conn: RepoConnection, updater: U) -> RepoConnectionFuture<Vec<T>> {
         let (statement, args) = updater.into_update_builder(self.table).build();
 
@@ -98,9 +126,16 @@ where
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn)),
         )
     }
+}
 
-    fn remove(&self, conn: RepoConnection, mask: F) -> RepoConnectionFuture<Vec<T>> {
-        let (statement, args) = mask.into_filtered_operation_builder(FilteredOperation::Delete, self.table)
+impl<T, F> DbRepoDelete<T, F, RepoError> for DbRepoImpl
+where
+    T: From<Row> + Send + 'static,
+    F: Filter + Send,
+{
+    fn delete(&self, conn: RepoConnection, filter: F) -> RepoConnectionFuture<Vec<T>> {
+        let (statement, args) = filter
+            .into_filtered_operation_builder(FilteredOperation::Delete, self.table)
             .build();
 
         Box::new(
@@ -109,4 +144,13 @@ where
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn)),
         )
     }
+}
+
+impl<T, N, F, U> DbRepo<T, N, F, U, RepoError> for DbRepoImpl
+where
+    T: From<Row> + Send + 'static,
+    N: Inserter + Send,
+    F: Filter + Send,
+    U: Updater + Send,
+{
 }

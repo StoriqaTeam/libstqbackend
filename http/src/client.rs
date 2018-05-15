@@ -210,7 +210,7 @@ impl ClientHandle {
         body: Option<String>,
         headers: Option<hyper::Headers>,
     ) -> Box<Future<Item = String, Error = Error> + Send> {
-        info!(
+        debug!(
             "Starting outbound http request: {} {} with body {} and headers {}",
             method,
             url,

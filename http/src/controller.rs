@@ -93,7 +93,7 @@ impl Application {
 
     /// Responds with JSON, logs response body
     fn response_with_json(body: String, acao: AccessControlAllowOrigin) -> Response {
-        info!("{}", body);
+        debug!("Http response body: {}", body);
 
         Self::response_with_body(body, acao)
     }

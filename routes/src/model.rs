@@ -21,6 +21,7 @@ pub enum Model {
     WizardStore,
     ModeratorProductComment,
     ModeratorStoreComment,
+    UserDeliveryAddress,
 }
 
 impl fmt::Display for Model {
@@ -40,6 +41,7 @@ impl fmt::Display for Model {
             Model::WizardStore => write!(f, "wizard_store"),
             Model::ModeratorProductComment => write!(f, "moderator_product_comment"),
             Model::ModeratorStoreComment => write!(f, "moderator_store_comment"),
+            Model::UserDeliveryAddress => write!(f, "user_delivery_address"),
         }
     }
 }
@@ -63,6 +65,7 @@ impl FromStr for Model {
             "wizard_store" => Ok(Model::WizardStore),
             "moderator_product_comment" => Ok(Model::ModeratorProductComment),
             "moderator_store_comment" => Ok(Model::ModeratorStoreComment),
+            "user_delivery_address" => Ok(Model::UserDeliveryAddress),
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
@@ -90,6 +93,7 @@ impl Model {
             Model::WizardStore => "wizard_stores".to_string(),
             Model::ModeratorProductComment => "moderator_product_comments".to_string(),
             Model::ModeratorStoreComment => "moderator_store_comments".to_string(),
+            Model::UserDeliveryAddress => "user_delivery_address".to_string(),
         }
     }
 }

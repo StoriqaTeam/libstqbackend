@@ -12,6 +12,7 @@ use std;
 
 use errors::{ControllerError, ErrorMessage};
 use request_util::ControllerFuture;
+use system::{SystemService, SystemServiceImpl};
 
 pub trait Controller {
     fn call(&self, request: Request) -> ControllerFuture;
@@ -21,6 +22,7 @@ pub type ServerFuture = Box<Future<Item = Response, Error = hyper::Error>>;
 
 pub struct Application {
     pub controller: Box<Controller>,
+    pub system_service: Box<SystemService>,
     pub acao: AccessControlAllowOrigin,
 }
 
@@ -52,15 +54,16 @@ impl Service for Application {
                 Box::new(future::ok(resp))
             }
             _ => Box::new(
-                self.controller
-                    .call(req)
-                    .then({
-                        let acao = self.acao.clone();
-                        |res| match res {
-                            Ok(data) => future::ok(Self::response_with_json(data, acao)),
-                            Err(err) => future::ok(Self::response_with_error(err, acao)),
-                        }
-                    })
+                match req.uri().path() {
+                    "/healthcheck" => self.system_service.healthcheck(),
+                    _ => self.controller.call(req),
+                }.then({
+                    let acao = self.acao.clone();
+                    |res| match res {
+                        Ok(data) => future::ok(Self::response_with_json(data, acao)),
+                        Err(err) => future::ok(Self::response_with_error(err, acao)),
+                    }
+                })
                     .inspect(|resp| debug!("Sending response: {:?}", resp)),
             ),
         }
@@ -74,6 +77,7 @@ impl Application {
     {
         Self {
             controller: Box::new(controller),
+            system_service: Box::new(SystemServiceImpl),
             acao: AccessControlAllowOrigin::Any,
         }
     }
@@ -83,6 +87,14 @@ impl Application {
         T: Controller + 'static,
     {
         self.controller = Box::new(controller);
+        self
+    }
+
+    pub fn with_system_service<T>(mut self, system_service: T) -> Self
+    where
+        T: SystemService + 'static,
+    {
+        self.system_service = Box::new(system_service);
         self
     }
 

@@ -48,7 +48,11 @@ impl Client {
     pub fn stream(self) -> Box<Stream<Item = (), Error = ()>> {
         let Self { client, rx, .. } = self;
 
-        Box::new(rx.and_then(move |payload| Self::send_request(&client, payload).map(|_| ()).map_err(|_| ())))
+        Box::new(rx.and_then(move |payload| {
+            Self::send_request(&client, payload)
+                .map(|_| ())
+                .map_err(|_| ())
+        }))
     }
 
     pub fn handle(&self) -> ClientHandle {
@@ -70,7 +74,10 @@ impl Client {
         let uri = match url.parse() {
             Ok(val) => val,
             Err(err) => {
-                error!("Url `{}` passed to http client cannot be parsed: `{}`", url, err);
+                error!(
+                    "Url `{}` passed to http client cannot be parsed: `{}`",
+                    url, err
+                );
                 return Box::new(
                     callback
                         .send(Err(Error::Parse(format!("Cannot parse url `{}`", url))))
@@ -101,7 +108,13 @@ impl Client {
 
                     _ => Box::new(body_future.and_then(move |body| {
                         let message = serde_json::from_str::<ErrorMessage>(&body).ok();
-                        let error = Error::Api(status, message.or(Some(ErrorMessage { code: 422, message: body })));
+                        let error = Error::Api(
+                            status,
+                            message.or(Some(ErrorMessage {
+                                code: 422,
+                                message: body,
+                            })),
+                        );
                         future::err(error)
                     })),
                 }
@@ -183,23 +196,26 @@ impl ClientHandle {
             let body_clone = body.clone();
             let url_clone = url.clone();
             let headers_clone = headers.clone();
-            Box::new(self.send_request(method, url, body, headers).or_else(move |err| match err {
-                Error::Network(err) => {
-                    warn!(
-                        "Failed to fetch `{}` with error `{}`, retrying... Retries left {}",
-                        url_clone, err, retries
-                    );
-                    self_clone.send_request_with_retries(
-                        method_clone,
-                        url_clone,
-                        body_clone,
-                        headers_clone,
-                        Some(Error::Network(err)),
-                        retries - 1,
-                    )
-                }
-                _ => Box::new(future::err(err)),
-            }))
+            Box::new(
+                self.send_request(method, url, body, headers)
+                    .or_else(move |err| match err {
+                        Error::Network(err) => {
+                            warn!(
+                                "Failed to fetch `{}` with error `{}`, retrying... Retries left {}",
+                                url_clone, err, retries
+                            );
+                            self_clone.send_request_with_retries(
+                                method_clone,
+                                url_clone,
+                                body_clone,
+                                headers_clone,
+                                Some(Error::Network(err)),
+                                retries - 1,
+                            )
+                        }
+                        _ => Box::new(future::err(err)),
+                    }),
+            )
         }
     }
 
@@ -232,9 +248,19 @@ impl ClientHandle {
         let future = self.tx
             .clone()
             .send(payload)
-            .map_err(|err| Error::Unknown(format!("Unexpected error sending http client request params to channel: {}", err)))
+            .map_err(|err| {
+                Error::Unknown(format!(
+                    "Unexpected error sending http client request params to channel: {}",
+                    err
+                ))
+            })
             .and_then(|_| {
-                rx.map_err(|err| Error::Unknown(format!("Unexpected error receiving http client response from channel: {}", err)))
+                rx.map_err(|err| {
+                    Error::Unknown(format!(
+                        "Unexpected error receiving http client response from channel: {}",
+                        err
+                    ))
+                })
             })
             .and_then(|result| result)
             .map_err(move |err| {
@@ -300,7 +326,10 @@ impl Error {
                 "Network error for microservice",
                 graphql_value!({ "code": 200, "details": { "See server logs for details." }}),
             ),
-            Error::Parse(message) => FieldError::new("Unexpected parsing error", graphql_value!({ "code": 300, "details": { message }})),
+            Error::Parse(message) => FieldError::new(
+                "Unexpected parsing error",
+                graphql_value!({ "code": 300, "details": { message }}),
+            ),
             _ => FieldError::new(
                 "Unknown error for microservice",
                 graphql_value!({ "code": 400, "details": { "See server logs for details." }}),

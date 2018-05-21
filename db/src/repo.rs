@@ -28,13 +28,10 @@ pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Se
     fn insert(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<Vec<T>, E>;
 
     fn insert_exactly_one(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<T, E> {
-        Box::new(
-            self.insert(conn, inserter)
-                .and_then(|(mut data, conn)| match data.pop() {
-                    Some(v) => Ok((v, conn)),
-                    None => Err((E::from(InsertError::NoData), conn)),
-                }),
-        )
+        Box::new(self.insert(conn, inserter).and_then(|(mut data, conn)| match data.pop() {
+            Some(v) => Ok((v, conn)),
+            None => Err((E::from(InsertError::NoData), conn)),
+        }))
     }
 }
 
@@ -63,7 +60,7 @@ pub type RepoConnectionFuture<T> = ConnectionFuture<T, RepoError>;
 impl From<InsertError> for RepoError {
     fn from(v: InsertError) -> Self {
         match v {
-            InsertError::NoData => format_err!("Insert operation returned no data")
+            InsertError::NoData => format_err!("Insert operation returned no data"),
         }
     }
 }
@@ -101,8 +98,7 @@ where
     F: Filter + Send,
 {
     fn select(&self, conn: RepoConnection, mask: F) -> RepoConnectionFuture<Vec<T>> {
-        let (statement, args) = mask.into_filtered_operation_builder(FilteredOperation::Select, self.table)
-            .build();
+        let (statement, args) = mask.into_filtered_operation_builder(FilteredOperation::Select, self.table).build();
 
         Box::new(
             conn.prepare2(&statement)

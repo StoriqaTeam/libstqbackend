@@ -65,11 +65,7 @@ impl FilteredOperationBuilder {
             "{} {}{};",
             &query,
             self.extra,
-            if self.op == FilteredOperation::Delete {
-                " RETURNING *"
-            } else {
-                ""
-            }
+            if self.op == FilteredOperation::Delete { " RETURNING *" } else { "" }
         );
 
         (out, args)

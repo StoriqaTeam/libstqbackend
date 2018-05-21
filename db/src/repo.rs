@@ -21,35 +21,72 @@ pub trait Updater {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InsertError {
     NoData,
+    ExtraData { extra: u32 },
 }
 
-pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Send + 'static>
-     {
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DeleteError {
+    NoData,
+    ExtraData { extra: u32 },
+}
+
+pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Send + 'static> {
     fn insert(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<Vec<T>, E>;
 
     fn insert_exactly_one(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<T, E> {
-        Box::new(self.insert(conn, inserter).and_then(|(mut data, conn)| match data.pop() {
-            Some(v) => Ok((v, conn)),
-            None => Err((E::from(InsertError::NoData), conn)),
+        Box::new(self.insert(conn, inserter).and_then(|(mut data, conn)| {
+            if data.len() > 1 {
+                return Err((
+                    E::from(InsertError::ExtraData {
+                        extra: data.len() as u32 - 1,
+                    }),
+                    conn,
+                ));
+            } else if data.len() == 0 {
+                return Err((E::from(InsertError::NoData), conn));
+            } else if data.len() == 1 {
+                return Ok((data.pop().unwrap(), conn));
+            } else {
+                unreachable!()
+            }
         }))
     }
 }
 
-pub trait DbRepoSelect<T: Send, F: Filter, E: Send> {
+pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: Send> {
     fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
 }
 
-pub trait DbRepoUpdate<T: Send, U: Updater, E: Send> {
+pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: Send> {
     fn update(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<Vec<T>, E>;
 }
 
-pub trait DbRepoDelete<T: Send, F: Filter, E: Send> {
+pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<DeleteError> + Send + 'static> {
     fn delete(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+
+    fn delete_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
+        Box::new(self.delete(conn, filter).and_then(|(mut data, conn)| {
+            if data.len() > 1 {
+                return Err((
+                    E::from(DeleteError::ExtraData {
+                        extra: data.len() as u32 - 1,
+                    }),
+                    conn,
+                ));
+            } else if data.len() == 0 {
+                return Err((E::from(DeleteError::NoData), conn));
+            } else if data.len() == 1 {
+                return Ok((data.pop().unwrap(), conn));
+            } else {
+                unreachable!()
+            }
+        }))
+    }
 }
 
-pub trait DbRepo<T: Send + 'static, I: Inserter, F: Filter, U: Updater, E: From<InsertError> + Send + 'static>
-    : DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoUpdate<T, U, E> + DbRepoDelete<T, F, E>
-    {
+pub trait DbRepo<T: Send + 'static, I: Inserter, F: Filter, U: Updater, E: From<InsertError> + From<DeleteError> + Send + 'static>:
+    DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoUpdate<T, U, E> + DbRepoDelete<T, F, E>
+{
 }
 
 pub type RepoError = failure::Error;
@@ -61,6 +98,16 @@ impl From<InsertError> for RepoError {
     fn from(v: InsertError) -> Self {
         match v {
             InsertError::NoData => format_err!("Insert operation returned no data"),
+            InsertError::ExtraData { extra } => format_err!("Insert operation returned extra data: +{}", extra),
+        }
+    }
+}
+
+impl From<DeleteError> for RepoError {
+    fn from(v: DeleteError) -> Self {
+        match v {
+            DeleteError::NoData => format_err!("Delete operation returned no data"),
+            DeleteError::ExtraData { extra } => format_err!("Delete operation returned extra data: +{}", extra),
         }
     }
 }

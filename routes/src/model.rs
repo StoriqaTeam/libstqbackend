@@ -26,23 +26,27 @@ pub enum Model {
 
 impl fmt::Display for Model {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Model::User => write!(f, "user"),
-            Model::JWT => write!(f, "jwt"),
-            Model::Store => write!(f, "store"),
-            Model::Product => write!(f, "product"),
-            Model::BaseProduct => write!(f, "base_product"),
-            Model::UserRoles => write!(f, "user_roles"),
-            Model::Attribute => write!(f, "attribute"),
-            Model::Category => write!(f, "category"),
-            Model::CartProduct => write!(f, "cart_product"),
-            Model::CartStore => write!(f, "cart_store"),
-            Model::SearchCategory => write!(f, "search_category"),
-            Model::WizardStore => write!(f, "wizard_store"),
-            Model::ModeratorProductComment => write!(f, "moderator_product_comment"),
-            Model::ModeratorStoreComment => write!(f, "moderator_store_comment"),
-            Model::UserDeliveryAddress => write!(f, "user_delivery_address"),
-        }
+        write!(
+            f,
+            "{}",
+            match *self {
+                Model::User => "user",
+                Model::JWT => "jwt",
+                Model::Store => "store",
+                Model::Product => "product",
+                Model::BaseProduct => "base_product",
+                Model::UserRoles => "user_roles",
+                Model::Attribute => "attribute",
+                Model::Category => "category",
+                Model::CartProduct => "cart_product",
+                Model::CartStore => "cart_store",
+                Model::SearchCategory => "search_category",
+                Model::WizardStore => "wizard_store",
+                Model::ModeratorProductComment => "moderator_product_comment",
+                Model::ModeratorStoreComment => "moderator_store_comment",
+                Model::UserDeliveryAddress => "user_delivery_address",
+            }
+        )
     }
 }
 

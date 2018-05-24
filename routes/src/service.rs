@@ -12,11 +12,15 @@ pub enum Service {
 
 impl fmt::Display for Service {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Service::Users => write!(f, "users"),
-            Service::Stores => write!(f, "stores"),
-            Service::Orders => write!(f, "orders"),
-        }
+        write!(
+            f,
+            "{}",
+            match *self {
+                Service::Users => "users",
+                Service::Stores => "stores",
+                Service::Orders => "orders",
+            }
+        )
     }
 }
 

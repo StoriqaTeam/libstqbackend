@@ -107,9 +107,9 @@ impl Model {
             Model::ModeratorProductComment => "moderator_product_comments".to_string(),
             Model::ModeratorStoreComment => "moderator_store_comments".to_string(),
             Model::UserDeliveryAddress => "user_delivery_address".to_string(),
-            Model::Warehouse => "warehouse".to_string(),
-            Model::WarehouseProduct => "warehouse_product".to_string(),
-            Model::WarehouseUser => "warehouse_user".to_string(),
+            Model::Warehouse => "warehouses".to_string(),
+            Model::WarehouseProduct => "warehouse_products".to_string(),
+            Model::WarehouseUser => "warehouse_users".to_string(),
         }
     }
 }

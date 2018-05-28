@@ -4,6 +4,8 @@ use super::statement::*;
 use failure;
 use futures::*;
 use futures_state_stream::*;
+use std::sync::Arc;
+use stq_acl as acl;
 use tokio_postgres::rows::Row;
 
 pub trait Filter {
@@ -18,14 +20,26 @@ pub trait Updater {
     fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+pub enum SelectError {
+    Unauthorized,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum UpdateError {
+    Unauthorized,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum InsertError {
+    Unauthorized,
     NoData,
     ExtraData { extra: u32 },
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DeleteError {
+    Unauthorized,
     NoData,
     ExtraData { extra: u32 },
 }
@@ -53,11 +67,11 @@ pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Se
     }
 }
 
-pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: Send> {
+pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<SelectError> + Send> {
     fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
 }
 
-pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: Send> {
+pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<UpdateError> + Send> {
     fn update(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<Vec<T>, E>;
 }
 
@@ -84,8 +98,22 @@ pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<DeleteError> + Send
     }
 }
 
-pub trait DbRepo<T: Send + 'static, I: Inserter, F: Filter, U: Updater, E: From<InsertError> + From<DeleteError> + Send + 'static>:
-    DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoUpdate<T, U, E> + DbRepoDelete<T, F, E>
+pub trait ImmutableDbRepo<
+    T: Send + 'static,
+    I: Inserter,
+    F: Filter,
+    E: From<InsertError> + From<SelectError> + From<DeleteError> + Send + 'static,
+>: DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoDelete<T, F, E>
+{
+}
+
+pub trait DbRepo<
+    T: Send + 'static,
+    I: Inserter,
+    F: Filter,
+    U: Updater,
+    E: From<InsertError> + From<SelectError> + From<UpdateError> + From<DeleteError> + Send + 'static,
+>: ImmutableDbRepo<T, I, F, E> + DbRepoUpdate<T, U, E>
 {
 }
 
@@ -96,30 +124,76 @@ pub type RepoConnectionFuture<T> = ConnectionFuture<T, RepoError>;
 
 impl From<InsertError> for RepoError {
     fn from(v: InsertError) -> Self {
+        use self::InsertError::*;
+
         match v {
-            InsertError::NoData => format_err!("Insert operation returned no data"),
-            InsertError::ExtraData { extra } => format_err!("Insert operation returned extra data: +{}", extra),
+            Unauthorized => format_err!("Denied insert"),
+            NoData => format_err!("Insert operation returned no data"),
+            ExtraData { extra } => format_err!("Insert operation returned extra data: +{}", extra),
+        }
+    }
+}
+
+impl From<SelectError> for RepoError {
+    fn from(v: SelectError) -> Self {
+        use self::SelectError::*;
+
+        match v {
+            Unauthorized => format_err!("Denied select"),
+        }
+    }
+}
+
+impl From<UpdateError> for RepoError {
+    fn from(v: UpdateError) -> Self {
+        use self::UpdateError::*;
+
+        match v {
+            Unauthorized => format_err!("Denied update"),
         }
     }
 }
 
 impl From<DeleteError> for RepoError {
     fn from(v: DeleteError) -> Self {
+        use self::DeleteError::*;
+
         match v {
-            DeleteError::NoData => format_err!("Delete operation returned no data"),
-            DeleteError::ExtraData { extra } => format_err!("Delete operation returned extra data: +{}", extra),
+            Unauthorized => format_err!("Denied delete"),
+            NoData => format_err!("Delete operation returned no data"),
+            ExtraData { extra } => format_err!("Delete operation returned extra data: +{}", extra),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Hash)]
+pub enum Action {
+    Select,
+    Insert,
+    Update,
+    Delete,
 }
 
 #[derive(Clone, Debug)]
 pub struct DbRepoImpl {
     pub table: &'static str,
+    pub acl_engine: Arc<acl::AclEngine<Action, RepoError>>,
 }
 
 impl DbRepoImpl {
     pub fn new(table: &'static str) -> Self {
-        Self { table }
+        Self {
+            table,
+            acl_engine: Arc::new(acl::SystemACL::default()),
+        }
+    }
+
+    pub fn with_acl_engine<E>(mut self, acl_engine: E) -> Self
+    where
+        E: acl::AclEngine<Action, RepoError> + 'static,
+    {
+        self.acl_engine = Arc::new(acl_engine);
+        self
     }
 }
 
@@ -132,9 +206,19 @@ where
         let (statement, args) = inserter.into_insert_builder(self.table).build();
 
         Box::new(
-            conn.prepare2(&statement)
-                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                .map(move |(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<_>>(), conn)),
+            self.acl_engine
+                .ensure_access(Action::Insert)
+                .then(move |res| {
+                    future::result(match res {
+                        Ok(ctx) => Ok((ctx, conn)),
+                        Err(e) => Err((e, conn)),
+                    })
+                })
+                .and_then(move |(_ctx, conn)| {
+                    conn.prepare2(&statement)
+                        .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                        .map(move |(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<_>>(), conn))
+                }),
         )
     }
 }
@@ -148,9 +232,19 @@ where
         let (statement, args) = mask.into_filtered_operation_builder(FilteredOperation::Select, self.table).build();
 
         Box::new(
-            conn.prepare2(&statement)
-                .and_then({ move |(statement, conn)| conn.query2(&statement, args).collect() })
-                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn)),
+            self.acl_engine
+                .ensure_access(Action::Select)
+                .then(move |res| {
+                    future::result(match res {
+                        Ok(ctx) => Ok((ctx, conn)),
+                        Err(e) => Err((e, conn)),
+                    })
+                })
+                .and_then(move |(_ctx, conn)| {
+                    conn.prepare2(&statement)
+                        .and_then({ move |(statement, conn)| conn.query2(&statement, args).collect() })
+                        .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
+                }),
         )
     }
 }
@@ -164,9 +258,19 @@ where
         let (statement, args) = updater.into_update_builder(self.table).build();
 
         Box::new(
-            conn.prepare2(&statement)
-                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn)),
+            self.acl_engine
+                .ensure_access(Action::Update)
+                .then(move |res| {
+                    future::result(match res {
+                        Ok(ctx) => Ok((ctx, conn)),
+                        Err(e) => Err((e, conn)),
+                    })
+                })
+                .and_then(move |(_ctx, conn)| {
+                    conn.prepare2(&statement)
+                        .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                        .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
+                }),
         )
     }
 }
@@ -182,11 +286,29 @@ where
             .build();
 
         Box::new(
-            conn.prepare2(&statement)
-                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn)),
+            self.acl_engine
+                .ensure_access(Action::Delete)
+                .then(move |res| {
+                    future::result(match res {
+                        Ok(ctx) => Ok((ctx, conn)),
+                        Err(e) => Err((e, conn)),
+                    })
+                })
+                .and_then(move |(_ctx, conn)| {
+                    conn.prepare2(&statement)
+                        .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                        .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
+                }),
         )
     }
+}
+
+impl<T, N, F> ImmutableDbRepo<T, N, F, RepoError> for DbRepoImpl
+where
+    T: From<Row> + Send + 'static,
+    N: Inserter + Send,
+    F: Filter + Send,
+{
 }
 
 impl<T, N, F, U> DbRepo<T, N, F, U, RepoError> for DbRepoImpl

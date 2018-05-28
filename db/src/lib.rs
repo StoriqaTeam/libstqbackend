@@ -3,6 +3,7 @@
 extern crate failure;
 extern crate futures;
 extern crate futures_state_stream;
+extern crate stq_acl;
 extern crate tokio_postgres;
 
 pub mod connection;

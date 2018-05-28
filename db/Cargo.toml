@@ -7,4 +7,5 @@ failure = "0.1"
 futures = "0.1"
 futures-state-stream = "0.2"
 postgres = { git = "https://github.com/StoriqaTeam/rust-postgres" }
+stq_acl = { path = "../acl" }
 tokio-postgres = { git = "https://github.com/StoriqaTeam/rust-postgres" }

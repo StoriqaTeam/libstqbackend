@@ -1,8 +1,11 @@
 use std::fmt;
+use std::io;
 use std::mem;
+use std::time::Duration;
 
 use futures::future;
 use futures::prelude::*;
+use futures::future::Either;
 use futures::sync::{mpsc, oneshot};
 use hyper;
 use hyper::header::{Authorization, Headers};
@@ -11,6 +14,7 @@ use juniper::FieldError;
 use serde::de::Deserialize;
 use serde_json;
 use tokio_core::reactor::Handle;
+use tokio_core;
 
 use errors::ErrorMessage;
 
@@ -27,6 +31,7 @@ pub struct Client {
     tx: mpsc::Sender<Payload>,
     rx: mpsc::Receiver<Payload>,
     max_retries: usize,
+    handle: Handle,
 }
 
 impl Client {
@@ -42,14 +47,15 @@ impl Client {
             tx,
             rx,
             max_retries,
+            handle: handle.clone()
         }
     }
 
     pub fn stream(self) -> Box<Stream<Item = (), Error = ()>> {
-        let Self { client, rx, .. } = self;
+        let Self { client, rx, handle, .. } = self;
 
         Box::new(rx.and_then(move |payload| {
-            Self::send_request(&client, payload)
+            Self::send_request(&handle, &client, payload)
                 .map(|_| ())
                 .map_err(|_| ())
         }))
@@ -62,7 +68,7 @@ impl Client {
         }
     }
 
-    fn send_request(client: &HyperClient, payload: Payload) -> Box<Future<Item = (), Error = ()>> {
+    fn send_request(handle: &Handle, client: &HyperClient, payload: Payload) -> Box<Future<Item = (), Error = ()>> {
         let Payload {
             url,
             method,
@@ -87,7 +93,7 @@ impl Client {
                 );
             }
         };
-        let mut req = hyper::Request::new(method, uri);
+        let mut req = hyper::Request::new(method.clone(), uri);
 
         if let Some(headers) = maybe_headers {
             mem::replace(req.headers_mut(), headers);
@@ -97,33 +103,62 @@ impl Client {
             req.set_body(body.clone());
         }
 
-        let task = client
-            .request(req)
-            .map_err(Error::Network)
-            .and_then(move |res| {
-                let status = res.status();
-                let body_future: Box<Future<Item = String, Error = Error>> = Box::new(Self::read_body(res.body()).map_err(Error::Network));
-                match status.as_u16() {
-                    200...299 => body_future,
+        // TODO: MOVE TO CONFIG
+        let timeout_duration = Duration::from_millis(5000);
 
-                    _ => Box::new(body_future.and_then(move |body| {
-                        let message = serde_json::from_str::<ErrorMessage>(&body).ok();
-                        let error = Error::Api(
-                            status,
-                            message.or(Some(ErrorMessage {
-                                code: 422,
-                                message: body,
-                            })),
-                        );
-                        future::err(error)
-                    })),
-                }
-            })
-            .then(|result| callback.send(result))
-            .map(|_| ())
-            .map_err(|_| ());
+        let timeout = match tokio_core::reactor::Timeout::new(timeout_duration, handle) {
+            Ok(t) => t,
+            Err(_) => {
+                error!("Could not get timeout for handle.");
+                return Box::new(future::err(()))
+            }
+        };
+        
+        let req_task = client.request(req);
 
-        Box::new(task)
+        let work = req_task.select2(timeout).then(move |res| match res {
+            Ok(Either::A((got, _timeout))) => Ok(got),
+            Ok(Either::B((_timeout_error, _get))) => {
+                let message = format!("Client timed out while connecting to {}, using method: {} after: 5 seconds.", url, method);
+                Err(hyper::Error::Io(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    message,
+                )))
+            }
+            Err(Either::A((get_error, _timeout))) => Err(get_error),
+            Err(Either::B((timeout_error, _get))) => {
+                error!("Timeout future error occured while connecting to {}, using method: {} after: 5 seconds.", url, method);
+                Err(From::from(timeout_error))
+            },
+        });
+
+        let work_with_timeout = 
+            work
+                .map_err(Error::Network)
+                .and_then(move |res| {
+                    let status = res.status();
+                    let body_future: Box<Future<Item = String, Error = Error>> = Box::new(Self::read_body(res.body()).map_err(Error::Network));
+                    match status.as_u16() {
+                        200...299 => body_future,
+
+                        _ => Box::new(body_future.and_then(move |body| {
+                            let message = serde_json::from_str::<ErrorMessage>(&body).ok();
+                            let error = Error::Api(
+                                status,
+                                message.or(Some(ErrorMessage {
+                                    code: 422,
+                                    message: body,
+                                })),
+                            );
+                            future::err(error)
+                        })),
+                    }
+                })
+                .then(|result| callback.send(result))
+                .map(|_| ())
+                .map_err(|_| ());
+
+        Box::new(work_with_timeout)
     }
 
     fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error> + Send> {

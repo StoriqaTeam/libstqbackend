@@ -20,52 +20,30 @@ pub trait Updater {
     fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
 }
 
-#[derive(Clone, Debug, PartialEq, Fail)]
-pub enum SelectError {
-    #[fail(display = "Denied select")]
-    Unauthorized,
-}
-
-#[derive(Clone, Debug, PartialEq, Fail)]
-pub enum UpdateError {
-    #[fail(display = "Denied update")]
-    Unauthorized,
-}
-
-#[derive(Clone, Debug, PartialEq, Fail)]
-pub enum InsertError {
-    #[fail(display = "Denied insert")]
-    Unauthorized,
-    #[fail(display = "Insert operation has returned no data.")]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum MultipleOperationError {
+    #[fail(display = "Operation has returned no data")]
     NoData,
-    #[fail(display = "Insert operation returned extra data: +{}", extra)]
+    #[fail(display = "Operation returned extra data: +{}", extra)]
     ExtraData { extra: u32 },
 }
 
-#[derive(Clone, Debug, PartialEq, Fail)]
-pub enum DeleteError {
-    #[fail(display = "Denied delete")]
-    Unauthorized,
-    #[fail(display = "Delete operation has returned no data")]
-    NoData,
-    #[fail(display = "Delete operation returned extra data: +{}", extra)]
-    ExtraData { extra: u32 },
-}
-
-pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Send + 'static> {
+pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<MultipleOperationError> + Send + 'static> {
     fn insert(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<Vec<T>, E>;
 
     fn insert_exactly_one(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<T, E> {
         Box::new(self.insert(conn, inserter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
                 return Err((
-                    E::from(InsertError::ExtraData {
-                        extra: data.len() as u32 - 1,
-                    }),
+                    E::from(
+                        MultipleOperationError::ExtraData {
+                            extra: data.len() as u32 - 1,
+                        },
+                    ),
                     conn,
                 ));
             } else if data.len() == 0 {
-                return Err((E::from(InsertError::NoData), conn));
+                return Err((E::from(MultipleOperationError::NoData), conn));
             } else if data.len() == 1 {
                 return Ok((data.pop().unwrap(), conn));
             } else {
@@ -75,28 +53,30 @@ pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<InsertError> + Se
     }
 }
 
-pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<SelectError> + Send> {
+pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send> {
     fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
 }
 
-pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<UpdateError> + Send> {
+pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<MultipleOperationError> + Send> {
     fn update(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<Vec<T>, E>;
 }
 
-pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<DeleteError> + Send + 'static> {
+pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send + 'static> {
     fn delete(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
 
     fn delete_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
         Box::new(self.delete(conn, filter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
                 return Err((
-                    E::from(DeleteError::ExtraData {
-                        extra: data.len() as u32 - 1,
-                    }),
+                    E::from(
+                        MultipleOperationError::ExtraData {
+                            extra: data.len() as u32 - 1,
+                        },
+                    ),
                     conn,
                 ));
             } else if data.len() == 0 {
-                return Err((E::from(DeleteError::NoData), conn));
+                return Err((E::from(MultipleOperationError::NoData), conn));
             } else if data.len() == 1 {
                 return Ok((data.pop().unwrap(), conn));
             } else {
@@ -106,22 +86,13 @@ pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<DeleteError> + Send
     }
 }
 
-pub trait ImmutableDbRepo<
-    T: Send + 'static,
-    I: Inserter,
-    F: Filter,
-    E: From<InsertError> + From<SelectError> + From<DeleteError> + Send + 'static,
->: DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoDelete<T, F, E>
+pub trait ImmutableDbRepo<T: Send + 'static, I: Inserter, F: Filter, E: From<MultipleOperationError> + Send + 'static>:
+    DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoDelete<T, F, E>
 {
 }
 
-pub trait DbRepo<
-    T: Send + 'static,
-    I: Inserter,
-    F: Filter,
-    U: Updater,
-    E: From<InsertError> + From<SelectError> + From<UpdateError> + From<DeleteError> + Send + 'static,
->: ImmutableDbRepo<T, I, F, E> + DbRepoUpdate<T, U, E>
+pub trait DbRepo<T: Send + 'static, I: Inserter, F: Filter, U: Updater, E: From<MultipleOperationError> + Send + 'static>:
+    ImmutableDbRepo<T, I, F, E> + DbRepoUpdate<T, U, E>
 {
 }
 

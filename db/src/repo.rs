@@ -20,27 +20,35 @@ pub trait Updater {
     fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Fail)]
 pub enum SelectError {
+    #[fail(display = "Denied select")]
     Unauthorized,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Fail)]
 pub enum UpdateError {
+    #[fail(display = "Denied update")]
     Unauthorized,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Fail)]
 pub enum InsertError {
+    #[fail(display = "Denied insert")]
     Unauthorized,
+    #[fail(display = "Insert operation has returned no data.")]
     NoData,
+    #[fail(display = "Insert operation returned extra data: +{}", extra)]
     ExtraData { extra: u32 },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Fail)]
 pub enum DeleteError {
+    #[fail(display = "Denied delete")]
     Unauthorized,
+    #[fail(display = "Delete operation has returned no data")]
     NoData,
+    #[fail(display = "Delete operation returned extra data: +{}", extra)]
     ExtraData { extra: u32 },
 }
 
@@ -122,50 +130,6 @@ pub type RepoFuture<T> = Box<Future<Item = T, Error = RepoError>>;
 pub type RepoConnection = BoxedConnection<RepoError>;
 pub type RepoConnectionFuture<T> = ConnectionFuture<T, RepoError>;
 
-impl From<InsertError> for RepoError {
-    fn from(v: InsertError) -> Self {
-        use self::InsertError::*;
-
-        match v {
-            Unauthorized => format_err!("Denied insert"),
-            NoData => format_err!("Insert operation returned no data"),
-            ExtraData { extra } => format_err!("Insert operation returned extra data: +{}", extra),
-        }
-    }
-}
-
-impl From<SelectError> for RepoError {
-    fn from(v: SelectError) -> Self {
-        use self::SelectError::*;
-
-        match v {
-            Unauthorized => format_err!("Denied select"),
-        }
-    }
-}
-
-impl From<UpdateError> for RepoError {
-    fn from(v: UpdateError) -> Self {
-        use self::UpdateError::*;
-
-        match v {
-            Unauthorized => format_err!("Denied update"),
-        }
-    }
-}
-
-impl From<DeleteError> for RepoError {
-    fn from(v: DeleteError) -> Self {
-        use self::DeleteError::*;
-
-        match v {
-            Unauthorized => format_err!("Denied delete"),
-            NoData => format_err!("Delete operation returned no data"),
-            ExtraData { extra } => format_err!("Delete operation returned extra data: +{}", extra),
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Hash)]
 pub enum Action {
     Select,
@@ -218,7 +182,8 @@ where
                     conn.prepare2(&statement)
                         .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
                         .map(move |(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<_>>(), conn))
-                }),
+                })
+                .map_err(|(e, conn)| (e.context("Failure while running insert").into(), conn)),
         )
     }
 }
@@ -270,7 +235,8 @@ where
                     conn.prepare2(&statement)
                         .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
                         .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
-                }),
+                })
+                .map_err(|(e, conn)| (e.context("Failure while running update").into(), conn)),
         )
     }
 }

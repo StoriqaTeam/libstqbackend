@@ -4,8 +4,8 @@ use std::mem;
 use std::time::Duration;
 
 use futures::future;
-use futures::prelude::*;
 use futures::future::Either;
+use futures::prelude::*;
 use futures::sync::{mpsc, oneshot};
 use hyper;
 use hyper::header::{Authorization, Headers};
@@ -13,8 +13,8 @@ use hyper_tls::HttpsConnector;
 use juniper::FieldError;
 use serde::de::Deserialize;
 use serde_json;
-use tokio_core::reactor::Handle;
 use tokio_core;
+use tokio_core::reactor::Handle;
 
 use errors::ErrorMessage;
 
@@ -47,18 +47,14 @@ impl Client {
             tx,
             rx,
             max_retries,
-            handle: handle.clone()
+            handle: handle.clone(),
         }
     }
 
     pub fn stream(self) -> Box<Stream<Item = (), Error = ()>> {
         let Self { client, rx, handle, .. } = self;
 
-        Box::new(rx.and_then(move |payload| {
-            Self::send_request(&handle, &client, payload)
-                .map(|_| ())
-                .map_err(|_| ())
-        }))
+        Box::new(rx.and_then(move |payload| Self::send_request(&handle, &client, payload).map(|_| ()).map_err(|_| ())))
     }
 
     pub fn handle(&self) -> ClientHandle {
@@ -80,10 +76,7 @@ impl Client {
         let uri = match url.parse() {
             Ok(val) => val,
             Err(err) => {
-                error!(
-                    "Url `{}` passed to http client cannot be parsed: `{}`",
-                    url, err
-                );
+                error!("Url `{}` passed to http client cannot be parsed: `{}`", url, err);
                 return Box::new(
                     callback
                         .send(Err(Error::Parse(format!("Cannot parse url `{}`", url))))
@@ -110,53 +103,48 @@ impl Client {
             Ok(t) => t,
             Err(_) => {
                 error!("Could not get timeout for handle.");
-                return Box::new(future::err(()))
+                return Box::new(future::err(()));
             }
         };
-        
+
         let req_task = client.request(req);
 
         let work = req_task.select2(timeout).then(move |res| match res {
             Ok(Either::A((got, _timeout))) => Ok(got),
             Ok(Either::B((_timeout_error, _get))) => {
-                let message = format!("Client timed out while connecting to {}, using method: {} after: 5 seconds.", url, method);
-                Err(hyper::Error::Io(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    message,
-                )))
+                let message = format!(
+                    "Client timed out while connecting to {}, using method: {} after: 5 seconds.",
+                    url, method
+                );
+                Err(hyper::Error::Io(io::Error::new(io::ErrorKind::TimedOut, message)))
             }
             Err(Either::A((get_error, _timeout))) => Err(get_error),
             Err(Either::B((timeout_error, _get))) => {
-                error!("Timeout future error occured while connecting to {}, using method: {} after: 5 seconds.", url, method);
+                error!(
+                    "Timeout future error occured while connecting to {}, using method: {} after: 5 seconds.",
+                    url, method
+                );
                 Err(From::from(timeout_error))
-            },
+            }
         });
 
-        let work_with_timeout = 
-            work
-                .map_err(Error::Network)
-                .and_then(move |res| {
-                    let status = res.status();
-                    let body_future: Box<Future<Item = String, Error = Error>> = Box::new(Self::read_body(res.body()).map_err(Error::Network));
-                    match status.as_u16() {
-                        200...299 => body_future,
+        let work_with_timeout = work.map_err(Error::Network)
+            .and_then(move |res| {
+                let status = res.status();
+                let body_future: Box<Future<Item = String, Error = Error>> = Box::new(Self::read_body(res.body()).map_err(Error::Network));
+                match status.as_u16() {
+                    200...299 => body_future,
 
-                        _ => Box::new(body_future.and_then(move |body| {
-                            let message = serde_json::from_str::<ErrorMessage>(&body).ok();
-                            let error = Error::Api(
-                                status,
-                                message.or(Some(ErrorMessage {
-                                    code: 422,
-                                    message: body,
-                                })),
-                            );
-                            future::err(error)
-                        })),
-                    }
-                })
-                .then(|result| callback.send(result))
-                .map(|_| ())
-                .map_err(|_| ());
+                    _ => Box::new(body_future.and_then(move |body| {
+                        let message = serde_json::from_str::<ErrorMessage>(&body).ok();
+                        let error = Error::Api(status, message.or(Some(ErrorMessage { code: 422, message: body })));
+                        future::err(error)
+                    })),
+                }
+            })
+            .then(|result| callback.send(result))
+            .map(|_| ())
+            .map_err(|_| ());
 
         Box::new(work_with_timeout)
     }
@@ -231,26 +219,23 @@ impl ClientHandle {
             let body_clone = body.clone();
             let url_clone = url.clone();
             let headers_clone = headers.clone();
-            Box::new(
-                self.send_request(method, url, body, headers)
-                    .or_else(move |err| match err {
-                        Error::Network(err) => {
-                            warn!(
-                                "Failed to fetch `{}` with error `{}`, retrying... Retries left {}",
-                                url_clone, err, retries
-                            );
-                            self_clone.send_request_with_retries(
-                                method_clone,
-                                url_clone,
-                                body_clone,
-                                headers_clone,
-                                Some(Error::Network(err)),
-                                retries - 1,
-                            )
-                        }
-                        _ => Box::new(future::err(err)),
-                    }),
-            )
+            Box::new(self.send_request(method, url, body, headers).or_else(move |err| match err {
+                Error::Network(err) => {
+                    warn!(
+                        "Failed to fetch `{}` with error `{}`, retrying... Retries left {}",
+                        url_clone, err, retries
+                    );
+                    self_clone.send_request_with_retries(
+                        method_clone,
+                        url_clone,
+                        body_clone,
+                        headers_clone,
+                        Some(Error::Network(err)),
+                        retries - 1,
+                    )
+                }
+                _ => Box::new(future::err(err)),
+            }))
         }
     }
 
@@ -283,19 +268,9 @@ impl ClientHandle {
         let future = self.tx
             .clone()
             .send(payload)
-            .map_err(|err| {
-                Error::Unknown(format!(
-                    "Unexpected error sending http client request params to channel: {}",
-                    err
-                ))
-            })
+            .map_err(|err| Error::Unknown(format!("Unexpected error sending http client request params to channel: {}", err)))
             .and_then(|_| {
-                rx.map_err(|err| {
-                    Error::Unknown(format!(
-                        "Unexpected error receiving http client response from channel: {}",
-                        err
-                    ))
-                })
+                rx.map_err(|err| Error::Unknown(format!("Unexpected error receiving http client response from channel: {}", err)))
             })
             .and_then(|result| result)
             .map_err(move |err| {
@@ -361,10 +336,7 @@ impl Error {
                 "Network error for microservice",
                 graphql_value!({ "code": 200, "details": { "See server logs for details." }}),
             ),
-            Error::Parse(message) => FieldError::new(
-                "Unexpected parsing error",
-                graphql_value!({ "code": 300, "details": { message }}),
-            ),
+            Error::Parse(message) => FieldError::new("Unexpected parsing error", graphql_value!({ "code": 300, "details": { message }})),
             _ => FieldError::new(
                 "Unknown error for microservice",
                 graphql_value!({ "code": 400, "details": { "See server logs for details." }}),

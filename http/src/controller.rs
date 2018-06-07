@@ -1,3 +1,4 @@
+use failure;
 use failure::Fail;
 use futures::future;
 use futures::prelude::*;
@@ -10,9 +11,10 @@ use hyper::{mime, Error, Headers, StatusCode};
 use serde_json;
 use std;
 
-use errors::{ControllerError, ErrorMessage};
-use request_util::ControllerFuture;
+use errors::*;
 use system::{SystemService, SystemServiceImpl};
+
+pub type ControllerFuture = Box<Future<Item = String, Error = failure::Error>>;
 
 pub trait Controller {
     fn call(&self, request: Request) -> ControllerFuture;
@@ -20,13 +22,17 @@ pub trait Controller {
 
 pub type ServerFuture = Box<Future<Item = Response, Error = hyper::Error>>;
 
-pub struct Application {
+pub struct Application<E: Fail + Codeable + PayloadCarrier> {
     pub controller: Box<Controller>,
     pub system_service: Box<SystemService>,
     pub acao: AccessControlAllowOrigin,
+    _error_type: std::marker::PhantomData<E>,
 }
 
-impl Service for Application {
+impl<E> Service for Application<E>
+where
+    E: Fail + Codeable + PayloadCarrier,
+{
     type Request = Request;
     type Response = Response;
     type Error = Error;
@@ -70,15 +76,19 @@ impl Service for Application {
     }
 }
 
-impl Application {
+impl<E> Application<E>
+where
+    E: Fail + Codeable + PayloadCarrier,
+{
     pub fn new<T>(controller: T) -> Self
     where
         T: Controller + 'static,
     {
         Self {
             controller: Box::new(controller),
-            system_service: Box::new(SystemServiceImpl),
+            system_service: Box::new(SystemServiceImpl::default()),
             acao: AccessControlAllowOrigin::Any,
+            _error_type: Default::default(),
         }
     }
 
@@ -111,17 +121,12 @@ impl Application {
     }
 
     /// Responds with JSON error, logs response body
-    fn response_with_error(error: ControllerError, acao: AccessControlAllowOrigin) -> Response {
-        if let Some(trace) = error.backtrace() {
-            error!("Trace: {}", trace);
-        }
-        error!("{}", error);
-        let mes = ErrorMessage {
-            code: error.code().as_u16(),
-            message: error.message(),
-        };
-        let mes = serde_json::to_string(&mes).unwrap();
-        Self::response_with_body(mes, acao).with_status(error.code())
+    fn response_with_error(error: failure::Error, acao: AccessControlAllowOrigin) -> Response {
+        trace!("Trace: {}", error.backtrace());
+        let error_data = ErrorMessageWrapper::<E>::from(error).inner;
+        error!("Description: \"{}\". Payload: {:?}", error_data.description, error_data.payload);
+        let mes = serde_json::to_string(&error_data).unwrap();
+        Self::response_with_body(mes, acao).with_status(hyper::StatusCode::try_from(error_data.code).unwrap())
     }
 
     fn response_with_body(body: String, acao: AccessControlAllowOrigin) -> Response {

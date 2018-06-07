@@ -137,7 +137,14 @@ impl Client {
 
                     _ => Box::new(body_future.and_then(move |body| {
                         let message = serde_json::from_str::<ErrorMessage>(&body).ok();
-                        let error = Error::Api(status, message.or(Some(ErrorMessage { code: 422, message: body })));
+                        let error = Error::Api(
+                            status,
+                            message.or(Some(ErrorMessage {
+                                code: 422,
+                                description: body,
+                                payload: None,
+                            })),
+                        );
                         future::err(error)
                     })),
                 }
@@ -303,8 +310,8 @@ impl fmt::Display for Error {
         match *self {
             Error::Api(ref status, Some(ref error_message)) => write!(
                 f,
-                "Http client 100: Api error: status: {}, code: {}, message: {}",
-                status, error_message.code, error_message.message
+                "Http client 100: Api error: status: {}, code: {}, description: {}, payload: {:?}",
+                status, error_message.code, error_message.description, error_message.payload
             ),
             Error::Api(status, None) => write!(f, "Http client 100: Api error: status: {}", status),
             Error::Network(ref err) => write!(f, "Http client 200: Network error: {}", err),
@@ -317,12 +324,21 @@ impl fmt::Display for Error {
 impl Error {
     pub fn into_graphql(self) -> FieldError {
         match self {
-            Error::Api(status, Some(ErrorMessage { code, message })) => {
+            Error::Api(
+                status,
+                Some(ErrorMessage {
+                    code,
+                    description,
+                    payload,
+                }),
+            ) => {
+                let payload = serde_json::to_string(&payload).unwrap();
+                let message = payload.clone();
                 let code = code.to_string();
                 let status = status.to_string();
                 FieldError::new(
                     "Error response from microservice",
-                    graphql_value!({ "code": 100, "details": {"status": status, "code": code, "message": message }}),
+                    graphql_value!({ "code": 100, "details": {"status": status, "code": code, "description": description, "message": message, "payload": payload }}),
                 )
             }
             Error::Api(status, None) => {

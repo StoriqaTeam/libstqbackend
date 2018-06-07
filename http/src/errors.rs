@@ -1,66 +1,65 @@
-use hyper;
-use serde_json;
+use failure::{Context, Error, Fail};
+use hyper::StatusCode;
+use serde_json::Value;
+use std;
 
-use failure::Error;
-
-use validator::ValidationErrors;
-
-#[derive(Debug, Fail)]
-pub enum ControllerError {
-    #[fail(display = "Not found")]
-    NotFound,
-    #[fail(display = "Parse error: {}", _0)]
-    Parse(String),
-    #[fail(display = "Bad request: {}", _0)]
-    BadRequest(Error),
-    #[fail(display = "Validation error: {}", _0)]
-    Validate(ValidationErrors),
-    #[fail(display = "Unprocessable entity: {}", _0)]
-    UnprocessableEntity(Error),
-    #[fail(display = "Internal server error: {}", _0)]
-    InternalServerError(Error),
-    #[fail(display = "Server is refusing to fullfil the reqeust: {}", _0)]
-    Forbidden(Error),
+pub trait Codeable {
+    fn code(&self) -> StatusCode;
 }
 
-impl From<serde_json::error::Error> for ControllerError {
-    fn from(e: serde_json::error::Error) -> Self {
-        ControllerError::UnprocessableEntity(e.into())
-    }
+pub trait PayloadCarrier {
+    fn payload(&self) -> Option<Value>;
 }
 
-impl ControllerError {
-    /// Converts `Error` to HTTP Status Code
-    pub fn code(&self) -> hyper::StatusCode {
-        use hyper::StatusCode;
-
-        match *self {
-            ControllerError::NotFound => StatusCode::NotFound,
-            ControllerError::Parse(_) | ControllerError::BadRequest(_) | ControllerError::Validate(_) => StatusCode::BadRequest,
-            ControllerError::UnprocessableEntity(_) => StatusCode::UnprocessableEntity,
-            ControllerError::InternalServerError(_) => StatusCode::InternalServerError,
-            ControllerError::Forbidden(_) => StatusCode::Forbidden,
-        }
-    }
-
-    /// Converts `Error` to string
-    pub fn message(&self) -> String {
-        match *self {
-            ControllerError::NotFound => "Not found".to_string(),
-            ControllerError::Parse(_) | ControllerError::BadRequest(_) => "Bad request".to_string(),
-            ControllerError::Validate(ref valid_err) => match serde_json::to_string(valid_err) {
-                Ok(res) => res,
-                Err(_) => "Bad request".to_string(),
-            },
-            ControllerError::UnprocessableEntity(_) => "Unprocessable entity".to_string(),
-            ControllerError::InternalServerError(_) => "Internal server error".to_string(),
-            ControllerError::Forbidden(_) => "Forbidden".to_string(),
-        }
-    }
+pub(crate) struct ErrorMessageWrapper<E: Fail + Codeable> {
+    pub inner: ErrorMessage,
+    _type: std::marker::PhantomData<E>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorMessage {
     pub code: u16,
-    pub message: String,
+    pub description: String,
+    pub payload: Option<Value>,
+}
+
+impl<E> ErrorMessageWrapper<E>
+where
+    E: Fail + Codeable + PayloadCarrier,
+{
+    pub fn from(e: Error) -> Self {
+        let description = e.causes().fold(String::new(), |mut acc, real_err| {
+            if !acc.is_empty() {
+                acc += " | ";
+            }
+            acc += &real_err.to_string();
+            acc
+        });
+
+        let mut code = 500;
+        let mut payload = None;
+
+        for cause in e.causes() {
+            let real_err = if let Some(ctx) = cause.downcast_ref::<Context<E>>() {
+                Some(ctx.get_context())
+            } else {
+                cause.downcast_ref::<E>()
+            };
+
+            if let Some(e) = real_err {
+                code = e.code().as_u16();
+                payload = e.payload();
+                break;
+            }
+        }
+
+        Self {
+            inner: ErrorMessage {
+                code,
+                description,
+                payload,
+            },
+            _type: Default::default(),
+        }
+    }
 }

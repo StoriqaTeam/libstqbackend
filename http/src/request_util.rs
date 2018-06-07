@@ -1,15 +1,19 @@
-use errors;
-
+use failure;
+use failure::Fail;
 use futures::future;
 use futures::prelude::*;
 use hyper;
-use serde_json;
-use std;
-
 use serde::de::Deserialize;
 use serde::ser::Serialize;
+use serde_json;
 
-pub type ControllerFuture = Box<Future<Item = String, Error = errors::ControllerError>>;
+#[derive(Clone, Debug, Fail)]
+pub enum ParseError {
+    #[fail(display = "Failure while reading body")]
+    ReadError,
+    #[fail(display = "Failed to convert received body")]
+    ConvertError,
+}
 
 /// Transforms request body with the following pipeline:
 ///
@@ -20,14 +24,20 @@ pub type ControllerFuture = Box<Future<Item = String, Error = errors::Controller
 /// Fails with `error::Error::UnprocessableEntity` if step 1 fails.
 ///
 /// Fails with `error::Error::BadRequest` with message if step 2 fails.
-pub fn parse_body<T>(body: hyper::Body) -> Box<Future<Item = T, Error = errors::ControllerError>>
+pub fn parse_body<T>(body: hyper::Body) -> Box<Future<Item = T, Error = failure::Error>>
 where
     T: for<'a> Deserialize<'a> + 'static,
 {
     Box::new(
         read_body(body)
-            .map_err(|err| errors::ControllerError::Parse(format!("{}", err)))
-            .and_then(|body| serde_json::from_str::<T>(&body).map_err(|e| errors::ControllerError::UnprocessableEntity(e.into()))),
+            .map_err(|err| err.context(ParseError::ReadError).into())
+            .and_then(move |body| {
+                serde_json::from_str::<T>(&body).map_err(move |err| {
+                    err.context(format!("Failed to parse as JSON: {}", body))
+                        .context(ParseError::ConvertError)
+                        .into()
+                })
+            }),
     )
 }
 
@@ -42,16 +52,16 @@ pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::
     }))
 }
 
-pub fn serialize_future<T, E, F>(f: F) -> ControllerFuture
+pub fn serialize_future<T, E, F>(f: F) -> Box<Future<Item = String, Error = failure::Error>>
 where
     F: IntoFuture<Item = T, Error = E> + 'static,
     E: 'static,
-    errors::ControllerError: std::convert::From<E>,
+    failure::Error: From<E>,
     T: Serialize,
 {
     Box::new(
         f.into_future()
-            .map_err(errors::ControllerError::from)
+            .map_err(failure::Error::from)
             .and_then(|resp| serde_json::to_string(&resp).map_err(|e| e.into())),
     )
 }

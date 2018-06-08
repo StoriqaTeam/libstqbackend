@@ -109,7 +109,6 @@ pub enum Action {
     Delete,
 }
 
-#[derive(Clone, Debug)]
 pub struct DbRepoImpl {
     pub table: &'static str,
     pub acl_engine: Arc<acl::AclEngine<Action, RepoError>>,

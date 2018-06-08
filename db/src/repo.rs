@@ -118,7 +118,7 @@ impl DbRepoImpl {
     pub fn new(table: &'static str) -> Self {
         Self {
             table,
-            acl_engine: Arc::new(acl::SystemACL::default()),
+            acl_engine: Arc::new(acl::SystemACL),
         }
     }
 

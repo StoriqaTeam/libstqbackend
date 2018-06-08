@@ -72,7 +72,7 @@ where
 
 /// `SystemACL` allows all manipulation with resources in all cases.
 #[derive(Clone, Debug, Default)]
-pub struct SystemACL {}
+pub struct SystemACL;
 
 #[allow(unused)]
 impl<Context, Error> AclEngine<Context, Error> for SystemACL
@@ -87,7 +87,7 @@ where
 
 /// `UnauthorizedACL` denies all manipulation with resources in all cases.
 #[derive(Clone, Debug, Default)]
-pub struct UnauthorizedACL {}
+pub struct UnauthorizedACL;
 
 #[allow(unused)]
 impl<Context, Error> AclEngine<Context, Error> for UnauthorizedACL

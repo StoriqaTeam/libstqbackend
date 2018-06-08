@@ -59,6 +59,17 @@ where
     }
 }
 
+impl<Context, Error, T> AclEngine<Context, Error> for T
+where
+    Context: Debug + Send + Sync + 'static,
+    Error: Send + From<UnauthorizedError<Context>> + 'static,
+    T: Fn(Context) -> Verdict<Context, Error> + Send + Sync,
+{
+    fn allows(&self, ctx: Context) -> Verdict<Context, Error> {
+        (self)(ctx)
+    }
+}
+
 /// `SystemACL` allows all manipulation with resources in all cases.
 #[derive(Clone, Debug, Default)]
 pub struct SystemACL {}

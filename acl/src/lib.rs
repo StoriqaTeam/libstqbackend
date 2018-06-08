@@ -37,7 +37,7 @@ where
 /// Access control layer for repos. It tells if a user can do a certain action with
 /// certain resource. All logic for roles and permissions should be hardcoded into implementation
 /// of this trait.
-pub trait AclEngine<Context, Error>: Debug + Send + Sync
+pub trait AclEngine<Context, Error>: Send + Sync
 where
     Context: Debug + Send + Sync + 'static,
     Error: Send + From<UnauthorizedError<Context>> + 'static,

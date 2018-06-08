@@ -35,11 +35,9 @@ pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<MultipleOperation
         Box::new(self.insert(conn, inserter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
                 return Err((
-                    E::from(
-                        MultipleOperationError::ExtraData {
-                            extra: data.len() as u32 - 1,
-                        },
-                    ),
+                    E::from(MultipleOperationError::ExtraData {
+                        extra: data.len() as u32 - 1,
+                    }),
                     conn,
                 ));
             } else if data.len() == 0 {
@@ -68,11 +66,9 @@ pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<MultipleOperationEr
         Box::new(self.delete(conn, filter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
                 return Err((
-                    E::from(
-                        MultipleOperationError::ExtraData {
-                            extra: data.len() as u32 - 1,
-                        },
-                    ),
+                    E::from(MultipleOperationError::ExtraData {
+                        extra: data.len() as u32 - 1,
+                    }),
                     conn,
                 ));
             } else if data.len() == 0 {

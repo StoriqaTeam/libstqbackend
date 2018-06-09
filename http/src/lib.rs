@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate failure;
 extern crate futures;
+#[macro_use]
 extern crate hyper;
 extern crate hyper_tls;
 #[macro_use]

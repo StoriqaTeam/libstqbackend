@@ -7,6 +7,8 @@ use serde::de::Deserialize;
 use serde::ser::Serialize;
 use serde_json;
 
+header! { (SessionId, "Session-Id") => [String] }
+
 #[derive(Clone, Debug, Fail)]
 pub enum ParseError {
     #[fail(display = "Failure while reading body")]

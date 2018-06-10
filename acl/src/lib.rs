@@ -6,12 +6,7 @@ extern crate futures;
 use futures::future;
 use futures::prelude::*;
 
-/// Implement this trait on resource to signal if it's in the current scope
-pub trait CheckScope<Scope, T> {
-    fn is_in_scope(&self, user_id: i32, scope: &Scope, obj: Option<&T>) -> bool;
-}
-
-pub type Verdict<E> = Box<Future<Item = bool, Error = E> + Send>;
+pub type Verdict<Context, E> = Box<Future<Item = (bool, Context), Error = (E, Context)> + Send>;
 
 #[derive(Clone, Debug, Fail)]
 #[fail(display = "Unauthorized")]
@@ -22,19 +17,20 @@ pub struct UnauthorizedError;
 /// of this trait.
 pub trait AclEngine<Context, Error>: Send + Sync
 where
+    Context: Send + 'static,
     Error: Send + From<UnauthorizedError> + 'static,
 {
     /// Tells if a user with id `user_id` can do `action` on `resource`.
     /// `resource_with_scope` can tell if this resource is in some scope, which is also a part of `acl` for some
     /// permissions. E.g. You can say that a user can do `Create` (`Action`) on `Store` (`Resource`) only if he's the
     /// `Owner` (`Scope`) of the store.
-    fn allows(&self, ctx: Context) -> Verdict<Error>;
+    fn allows(&self, ctx: Context) -> Verdict<Context, Error>;
 
-    fn ensure_access(&self, ctx: Context) -> Box<Future<Item = (), Error = Error> + Send> {
-        Box::new(self.allows(ctx).and_then(|allowed| {
+    fn ensure_access(&self, ctx: Context) -> Box<Future<Item = Context, Error = (Error, Context)> + Send> {
+        Box::new(self.allows(ctx).and_then(|(allowed, ctx)| {
             future::result(match allowed {
-                true => Ok(()),
-                false => Err(Error::from(UnauthorizedError)),
+                true => Ok(ctx),
+                false => Err((Error::from(UnauthorizedError), ctx)),
             })
         }))
     }
@@ -42,10 +38,11 @@ where
 
 impl<Context, Error, T> AclEngine<Context, Error> for T
 where
+    Context: Send + 'static,
     Error: Send + From<UnauthorizedError> + 'static,
-    T: Fn(Context) -> Verdict<Error> + Send + Sync,
+    T: Fn(Context) -> Verdict<Context, Error> + Send + Sync,
 {
-    fn allows(&self, ctx: Context) -> Verdict<Error> {
+    fn allows(&self, ctx: Context) -> Verdict<Context, Error> {
         (self)(ctx)
     }
 }
@@ -57,10 +54,11 @@ pub struct SystemACL;
 #[allow(unused)]
 impl<Context, Error> AclEngine<Context, Error> for SystemACL
 where
+    Context: Send + 'static,
     Error: Send + From<UnauthorizedError> + 'static,
 {
-    fn allows(&self, _ctx: Context) -> Verdict<Error> {
-        Box::new(future::ok((true)))
+    fn allows(&self, ctx: Context) -> Verdict<Context, Error> {
+        Box::new(future::ok((true, ctx)))
     }
 }
 
@@ -71,10 +69,11 @@ pub struct UnauthorizedACL;
 #[allow(unused)]
 impl<Context, Error> AclEngine<Context, Error> for UnauthorizedACL
 where
+    Context: Send + 'static,
     Error: Send + From<UnauthorizedError> + 'static,
 {
-    fn allows(&self, _ctx: Context) -> Verdict<Error> {
-        Box::new(future::ok((false)))
+    fn allows(&self, ctx: Context) -> Verdict<Context, Error> {
+        Box::new(future::ok((false, ctx)))
     }
 }
 

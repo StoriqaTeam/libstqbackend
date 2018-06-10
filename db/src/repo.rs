@@ -105,12 +105,39 @@ pub enum Action {
     Delete,
 }
 
-pub struct DbRepoImpl {
-    pub table: &'static str,
-    pub acl_engine: Arc<acl::AclEngine<Action, RepoError>>,
+pub struct AclContext<T> {
+    entity: T,
+    action: Action,
 }
 
-impl DbRepoImpl {
+fn bulk_ensure_access<T>(
+    acl_engine: Arc<acl::AclEngine<AclContext<T>, RepoError>>,
+    context: AclContext<Vec<T>>,
+    conn: BoxedConnection<RepoError>,
+) -> impl Future<Item = (Vec<T>, BoxedConnection<RepoError>), Error = (RepoError, BoxedConnection<RepoError>)>
+where
+    T: Send + 'static,
+{
+    let action = context.action;
+    let items = context.entity;
+    future::join_all(items.into_iter().map({
+        let acl_engine = acl_engine.clone();
+        move |entity| acl_engine.ensure_access(AclContext { entity, action }).map(|ctx| ctx.entity)
+    })).then(move |res| match res {
+        Ok(items) => Ok((items, conn)),
+        Err((e, _ctx)) => Err((e, conn)),
+    })
+}
+
+pub struct DbRepoImpl<T: From<Row> + Send + 'static> {
+    pub table: &'static str,
+    pub acl_engine: Arc<acl::AclEngine<AclContext<T>, RepoError>>,
+}
+
+impl<T> DbRepoImpl<T>
+where
+    T: From<Row> + Send + 'static,
+{
     pub fn new(table: &'static str) -> Self {
         Self {
             table,
@@ -120,14 +147,14 @@ impl DbRepoImpl {
 
     pub fn with_acl_engine<E>(mut self, acl_engine: E) -> Self
     where
-        E: acl::AclEngine<Action, RepoError> + 'static,
+        E: acl::AclEngine<AclContext<T>, RepoError> + 'static,
     {
         self.acl_engine = Arc::new(acl_engine);
         self
     }
 }
 
-impl<T, N> DbRepoInsert<T, N, RepoError> for DbRepoImpl
+impl<T, N> DbRepoInsert<T, N, RepoError> for DbRepoImpl<T>
 where
     T: From<Row> + Send + 'static,
     N: Inserter + Send,
@@ -135,26 +162,28 @@ where
     fn insert(&self, conn: RepoConnection, inserter: N) -> RepoConnectionFuture<Vec<T>> {
         let (statement, args) = inserter.into_insert_builder(self.table).build();
 
+        let acl_engine = self.acl_engine.clone();
+
         Box::new(
-            self.acl_engine
-                .ensure_access(Action::Insert)
-                .then(move |res| {
-                    future::result(match res {
-                        Ok(ctx) => Ok((ctx, conn)),
-                        Err(e) => Err((e, conn)),
-                    })
-                })
-                .and_then(move |(_ctx, conn)| {
-                    conn.prepare2(&statement)
-                        .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                        .map(move |(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<_>>(), conn))
+            conn.prepare2(&statement)
+                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| {
+                    bulk_ensure_access(
+                        acl_engine,
+                        AclContext {
+                            entity: items,
+                            action: Action::Insert,
+                        },
+                        conn,
+                    )
                 })
                 .map_err(|(e, conn)| (e.context("Failure while running insert").into(), conn)),
         )
     }
 }
 
-impl<T, F> DbRepoSelect<T, F, RepoError> for DbRepoImpl
+impl<T, F> DbRepoSelect<T, F, RepoError> for DbRepoImpl<T>
 where
     T: From<Row> + Send + 'static,
     F: Filter + Send,
@@ -162,25 +191,28 @@ where
     fn select(&self, conn: RepoConnection, mask: F) -> RepoConnectionFuture<Vec<T>> {
         let (statement, args) = mask.into_filtered_operation_builder(FilteredOperation::Select, self.table).build();
 
+        let acl_engine = self.acl_engine.clone();
+
         Box::new(
-            self.acl_engine
-                .ensure_access(Action::Select)
-                .then(move |res| {
-                    future::result(match res {
-                        Ok(ctx) => Ok((ctx, conn)),
-                        Err(e) => Err((e, conn)),
-                    })
+            conn.prepare2(&statement)
+                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| {
+                    bulk_ensure_access(
+                        acl_engine,
+                        AclContext {
+                            entity: items,
+                            action: Action::Select,
+                        },
+                        conn,
+                    )
                 })
-                .and_then(move |(_ctx, conn)| {
-                    conn.prepare2(&statement)
-                        .and_then({ move |(statement, conn)| conn.query2(&statement, args).collect() })
-                        .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
-                }),
+                .map_err(|(e, conn)| (e.context("Failure while running select").into(), conn)),
         )
     }
 }
 
-impl<T, U> DbRepoUpdate<T, U, RepoError> for DbRepoImpl
+impl<T, U> DbRepoUpdate<T, U, RepoError> for DbRepoImpl<T>
 where
     T: From<Row> + Send + 'static,
     U: Updater + Send,
@@ -188,26 +220,28 @@ where
     fn update(&self, conn: RepoConnection, updater: U) -> RepoConnectionFuture<Vec<T>> {
         let (statement, args) = updater.into_update_builder(self.table).build();
 
+        let acl_engine = self.acl_engine.clone();
+
         Box::new(
-            self.acl_engine
-                .ensure_access(Action::Update)
-                .then(move |res| {
-                    future::result(match res {
-                        Ok(ctx) => Ok((ctx, conn)),
-                        Err(e) => Err((e, conn)),
-                    })
-                })
-                .and_then(move |(_ctx, conn)| {
-                    conn.prepare2(&statement)
-                        .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                        .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
+            conn.prepare2(&statement)
+                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| {
+                    bulk_ensure_access(
+                        acl_engine,
+                        AclContext {
+                            entity: items,
+                            action: Action::Update,
+                        },
+                        conn,
+                    )
                 })
                 .map_err(|(e, conn)| (e.context("Failure while running update").into(), conn)),
         )
     }
 }
 
-impl<T, F> DbRepoDelete<T, F, RepoError> for DbRepoImpl
+impl<T, F> DbRepoDelete<T, F, RepoError> for DbRepoImpl<T>
 where
     T: From<Row> + Send + 'static,
     F: Filter + Send,
@@ -217,25 +251,28 @@ where
             .into_filtered_operation_builder(FilteredOperation::Delete, self.table)
             .build();
 
+        let acl_engine = self.acl_engine.clone();
+
         Box::new(
-            self.acl_engine
-                .ensure_access(Action::Delete)
-                .then(move |res| {
-                    future::result(match res {
-                        Ok(ctx) => Ok((ctx, conn)),
-                        Err(e) => Err((e, conn)),
-                    })
+            conn.prepare2(&statement)
+                .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
+                .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| {
+                    bulk_ensure_access(
+                        acl_engine,
+                        AclContext {
+                            entity: items,
+                            action: Action::Delete,
+                        },
+                        conn,
+                    )
                 })
-                .and_then(move |(_ctx, conn)| {
-                    conn.prepare2(&statement)
-                        .and_then(move |(statement, conn)| conn.query2(&statement, args).collect())
-                        .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<_>(), conn))
-                }),
+                .map_err(|(e, conn)| (e.context("Failure while running delete").into(), conn)),
         )
     }
 }
 
-impl<T, N, F> ImmutableDbRepo<T, N, F, RepoError> for DbRepoImpl
+impl<T, N, F> ImmutableDbRepo<T, N, F, RepoError> for DbRepoImpl<T>
 where
     T: From<Row> + Send + 'static,
     N: Inserter + Send,
@@ -243,7 +280,7 @@ where
 {
 }
 
-impl<T, N, F, U> DbRepo<T, N, F, U, RepoError> for DbRepoImpl
+impl<T, N, F, U> DbRepo<T, N, F, U, RepoError> for DbRepoImpl<T>
 where
     T: From<Row> + Send + 'static,
     N: Inserter + Send,

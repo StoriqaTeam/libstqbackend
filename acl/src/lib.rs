@@ -28,9 +28,10 @@ where
 
     fn ensure_access(&self, ctx: Context) -> Box<Future<Item = Context, Error = (Error, Context)> + Send> {
         Box::new(self.allows(ctx).and_then(|(allowed, ctx)| {
-            future::result(match allowed {
-                true => Ok(ctx),
-                false => Err((Error::from(UnauthorizedError), ctx)),
+            future::result(if allowed {
+                Ok(ctx)
+            } else {
+                Err((Error::from(UnauthorizedError), ctx))
             })
         }))
     }
@@ -62,12 +63,12 @@ where
     }
 }
 
-/// `UnauthorizedACL` denies all manipulation with resources in all cases.
+/// `ForbiddenACL` denies all manipulation with resources in all cases.
 #[derive(Clone, Debug, Default)]
-pub struct UnauthorizedACL;
+pub struct ForbiddenACL;
 
 #[allow(unused)]
-impl<Context, Error> AclEngine<Context, Error> for UnauthorizedACL
+impl<Context, Error> AclEngine<Context, Error> for ForbiddenACL
 where
     Context: Send + 'static,
     Error: Send + From<UnauthorizedError> + 'static,

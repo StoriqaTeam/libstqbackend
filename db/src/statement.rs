@@ -2,6 +2,18 @@ use std;
 use std::collections::BTreeMap;
 use tokio_postgres::types::ToSql;
 
+pub trait Filter {
+    fn into_filtered_operation_builder(self, op: FilteredOperation, table: &'static str) -> FilteredOperationBuilder;
+}
+
+pub trait Inserter {
+    fn into_insert_builder(self, table: &'static str) -> InsertBuilder;
+}
+
+pub trait Updater {
+    fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
+}
+
 /// Filtering operation
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FilteredOperation {

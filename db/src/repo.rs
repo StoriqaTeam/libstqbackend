@@ -39,12 +39,50 @@ pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<MultipleOperation
     }
 }
 
-pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send> {
+pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send + 'static> {
     fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+
+    fn select_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
+        Box::new(self.select(conn, filter).and_then(|(mut data, conn)| {
+            if data.len() > 1 {
+                return Err((
+                    E::from(MultipleOperationError::ExtraData {
+                        extra: data.len() as u32 - 1,
+                    }),
+                    conn,
+                ));
+            } else if data.len() == 0 {
+                return Err((E::from(MultipleOperationError::NoData), conn));
+            } else if data.len() == 1 {
+                return Ok((data.pop().unwrap(), conn));
+            } else {
+                unreachable!()
+            }
+        }))
+    }
 }
 
-pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<MultipleOperationError> + Send> {
+pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<MultipleOperationError> + Send + 'static> {
     fn update(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<Vec<T>, E>;
+
+    fn update_exactly_one(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<T, E> {
+        Box::new(self.update(conn, updater).and_then(|(mut data, conn)| {
+            if data.len() > 1 {
+                return Err((
+                    E::from(MultipleOperationError::ExtraData {
+                        extra: data.len() as u32 - 1,
+                    }),
+                    conn,
+                ));
+            } else if data.len() == 0 {
+                return Err((E::from(MultipleOperationError::NoData), conn));
+            } else if data.len() == 1 {
+                return Ok((data.pop().unwrap(), conn));
+            } else {
+                unreachable!()
+            }
+        }))
+    }
 }
 
 pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send + 'static> {

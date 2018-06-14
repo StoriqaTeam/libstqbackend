@@ -4,7 +4,7 @@ use super::statement::{Filter, FilteredOperation, Inserter, Updater};
 use failure;
 use futures::*;
 use futures_state_stream::*;
-use std::sync::Arc;
+use std::rc::Rc;
 use stq_acl as acl;
 use tokio_postgres::rows::Row;
 
@@ -125,10 +125,10 @@ where
     U: Updater + 'static,
 {
     pub table: &'static str,
-    pub insert_acl_engine: Arc<acl::AclEngine<I, RepoError>>,
-    pub select_acl_engine: Arc<acl::AclEngine<F, RepoError>>,
-    pub delete_acl_engine: Arc<acl::AclEngine<F, RepoError>>,
-    pub update_acl_engine: Arc<acl::AclEngine<U, RepoError>>,
+    pub insert_acl_engine: Rc<acl::AclEngine<I, RepoError>>,
+    pub select_acl_engine: Rc<acl::AclEngine<F, RepoError>>,
+    pub delete_acl_engine: Rc<acl::AclEngine<F, RepoError>>,
+    pub update_acl_engine: Rc<acl::AclEngine<U, RepoError>>,
 }
 
 impl<I, F, U> DbRepoImpl<I, F, U>
@@ -140,10 +140,10 @@ where
     pub fn new(table: &'static str) -> Self {
         Self {
             table,
-            insert_acl_engine: Arc::new(acl::SystemACL),
-            select_acl_engine: Arc::new(acl::SystemACL),
-            delete_acl_engine: Arc::new(acl::SystemACL),
-            update_acl_engine: Arc::new(acl::SystemACL),
+            insert_acl_engine: Rc::new(acl::SystemACL),
+            select_acl_engine: Rc::new(acl::SystemACL),
+            delete_acl_engine: Rc::new(acl::SystemACL),
+            update_acl_engine: Rc::new(acl::SystemACL),
         }
     }
 
@@ -151,7 +151,7 @@ where
     where
         E: acl::AclEngine<I, RepoError> + 'static,
     {
-        self.insert_acl_engine = Arc::new(acl_engine);
+        self.insert_acl_engine = Rc::new(acl_engine);
         self
     }
 
@@ -159,7 +159,7 @@ where
     where
         E: acl::AclEngine<F, RepoError> + 'static,
     {
-        self.select_acl_engine = Arc::new(acl_engine);
+        self.select_acl_engine = Rc::new(acl_engine);
         self
     }
 
@@ -167,7 +167,7 @@ where
     where
         E: acl::AclEngine<F, RepoError> + 'static,
     {
-        self.delete_acl_engine = Arc::new(acl_engine);
+        self.delete_acl_engine = Rc::new(acl_engine);
         self
     }
 
@@ -175,7 +175,7 @@ where
     where
         E: acl::AclEngine<U, RepoError> + 'static,
     {
-        self.update_acl_engine = Arc::new(acl_engine);
+        self.update_acl_engine = Rc::new(acl_engine);
         self
     }
 }

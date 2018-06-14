@@ -25,6 +25,7 @@ pub enum Model {
     Warehouse,
     WarehouseProduct,
     WarehouseUser,
+    Order,
 }
 
 impl fmt::Display for Model {
@@ -51,6 +52,7 @@ impl fmt::Display for Model {
                 Model::Warehouse => "warehouse",
                 Model::WarehouseProduct => "warehouse_product",
                 Model::WarehouseUser => "warehouse_user",
+                Model::Order => "order",
             }
         )
     }
@@ -79,6 +81,7 @@ impl FromStr for Model {
             "warehouse" => Ok(Model::Warehouse),
             "warehouse_product" => Ok(Model::WarehouseProduct),
             "warehouse_user" => Ok(Model::WarehouseUser),
+            "order" => Ok(Model::Order),
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
@@ -110,6 +113,7 @@ impl Model {
             Model::Warehouse => "warehouses".to_string(),
             Model::WarehouseProduct => "warehouse_products".to_string(),
             Model::WarehouseUser => "warehouse_users".to_string(),
+            Model::Order => "orders".to_string(),
         }
     }
 }

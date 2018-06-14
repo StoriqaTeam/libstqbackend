@@ -3,6 +3,8 @@ name = "stq_db"
 version = "0.1.0"
 
 [dependencies]
+bb8 = { git = "https://github.com/StoriqaTeam/bb8" }
+bb8-postgres = { git = "https://github.com/StoriqaTeam/bb8" }
 failure = "0.1"
 futures = "0.1"
 futures-state-stream = "0.2"

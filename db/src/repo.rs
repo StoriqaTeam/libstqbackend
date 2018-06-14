@@ -16,7 +16,7 @@ pub enum MultipleOperationError {
     ExtraData { extra: u32 },
 }
 
-pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<MultipleOperationError> + Send + 'static> {
+pub trait DbRepoInsert<T: 'static, I: Inserter, E: From<MultipleOperationError> + 'static> {
     fn insert(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<Vec<T>, E>;
 
     fn insert_exactly_one(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<T, E> {
@@ -39,7 +39,7 @@ pub trait DbRepoInsert<T: Send + 'static, I: Inserter, E: From<MultipleOperation
     }
 }
 
-pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send + 'static> {
+pub trait DbRepoSelect<T: 'static, F: Filter, E: From<MultipleOperationError> + 'static> {
     fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
 
     fn select_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
@@ -62,7 +62,7 @@ pub trait DbRepoSelect<T: Send + 'static, F: Filter, E: From<MultipleOperationEr
     }
 }
 
-pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<MultipleOperationError> + Send + 'static> {
+pub trait DbRepoUpdate<T: 'static, U: Updater, E: From<MultipleOperationError> + 'static> {
     fn update(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<Vec<T>, E>;
 
     fn update_exactly_one(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<T, E> {
@@ -85,7 +85,7 @@ pub trait DbRepoUpdate<T: Send + 'static, U: Updater, E: From<MultipleOperationE
     }
 }
 
-pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<MultipleOperationError> + Send + 'static> {
+pub trait DbRepoDelete<T: 'static, F: Filter, E: From<MultipleOperationError> + 'static> {
     fn delete(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
 
     fn delete_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
@@ -108,7 +108,7 @@ pub trait DbRepoDelete<T: Send + 'static, F: Filter, E: From<MultipleOperationEr
     }
 }
 
-pub trait DbRepo<T: Send + 'static, I: Inserter, F: Filter, U: Updater, E: From<MultipleOperationError> + Send + 'static>:
+pub trait DbRepo<T: 'static, I: Inserter, F: Filter, U: Updater, E: From<MultipleOperationError> + 'static>:
     DbRepoInsert<T, I, E> + DbRepoSelect<T, F, E> + DbRepoDelete<T, F, E> + DbRepoUpdate<T, U, E>
 {
 }
@@ -120,9 +120,9 @@ pub type RepoConnectionFuture<T> = ConnectionFuture<T, RepoError>;
 
 pub struct DbRepoImpl<I, F, U>
 where
-    I: Inserter + Send + 'static,
-    F: Filter + Send + 'static,
-    U: Updater + Send + 'static,
+    I: Inserter + 'static,
+    F: Filter + 'static,
+    U: Updater + 'static,
 {
     pub table: &'static str,
     pub insert_acl_engine: Arc<acl::AclEngine<I, RepoError>>,
@@ -133,9 +133,9 @@ where
 
 impl<I, F, U> DbRepoImpl<I, F, U>
 where
-    F: Filter + Send + 'static,
-    I: Inserter + Send + 'static,
-    U: Updater + Send + 'static,
+    F: Filter + 'static,
+    I: Inserter + 'static,
+    U: Updater + 'static,
 {
     pub fn new(table: &'static str) -> Self {
         Self {
@@ -182,10 +182,10 @@ where
 
 impl<T, I, F, U> DbRepoInsert<T, I, RepoError> for DbRepoImpl<I, F, U>
 where
-    F: Filter + Send,
-    T: From<Row> + Send + 'static,
-    I: Inserter + Send,
-    U: Updater + Send,
+    F: Filter,
+    T: From<Row> + 'static,
+    I: Inserter,
+    U: Updater,
 {
     fn insert(&self, conn: RepoConnection, inserter: I) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
@@ -212,10 +212,10 @@ where
 
 impl<T, I, F, U> DbRepoSelect<T, F, RepoError> for DbRepoImpl<I, F, U>
 where
-    T: From<Row> + Send + 'static,
-    F: Filter + Send,
-    I: Inserter + Send,
-    U: Updater + Send,
+    T: From<Row> + 'static,
+    F: Filter,
+    I: Inserter,
+    U: Updater,
 {
     fn select(&self, conn: RepoConnection, filter: F) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
@@ -242,10 +242,10 @@ where
 
 impl<T, I, F, U> DbRepoUpdate<T, U, RepoError> for DbRepoImpl<I, F, U>
 where
-    T: From<Row> + Send + 'static,
-    F: Filter + Send,
-    I: Inserter + Send,
-    U: Updater + Send,
+    T: From<Row> + 'static,
+    F: Filter,
+    I: Inserter,
+    U: Updater,
 {
     fn update(&self, conn: RepoConnection, updater: U) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
@@ -272,10 +272,10 @@ where
 
 impl<T, I, F, U> DbRepoDelete<T, F, RepoError> for DbRepoImpl<I, F, U>
 where
-    T: From<Row> + Send + 'static,
-    F: Filter + Send,
-    I: Inserter + Send,
-    U: Updater + Send,
+    T: From<Row> + 'static,
+    F: Filter,
+    I: Inserter,
+    U: Updater,
 {
     fn delete(&self, conn: RepoConnection, filter: F) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
@@ -302,9 +302,9 @@ where
 
 impl<T, I, F, U> DbRepo<T, I, F, U, RepoError> for DbRepoImpl<I, F, U>
 where
-    T: From<Row> + Send + 'static,
-    F: Filter + Send,
-    I: Inserter + Send,
-    U: Updater + Send,
+    T: From<Row> + 'static,
+    F: Filter,
+    I: Inserter,
+    U: Updater,
 {
 }

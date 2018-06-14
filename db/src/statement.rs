@@ -26,7 +26,7 @@ pub struct FilteredOperationBuilder {
     op: FilteredOperation,
     table: &'static str,
     extra: &'static str,
-    filters: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
+    filters: BTreeMap<&'static str, Box<ToSql + 'static>>,
 }
 
 impl FilteredOperationBuilder {
@@ -41,7 +41,7 @@ impl FilteredOperationBuilder {
     }
 
     /// Add filtering arguments
-    pub fn with_arg<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
+    pub fn with_arg<V: ToSql + 'static>(mut self, column: &'static str, value: V) -> Self {
         self.filters.insert(column, Box::new(value));
         self
     }
@@ -53,7 +53,7 @@ impl FilteredOperationBuilder {
     }
 
     /// Build a query
-    pub fn build(self) -> (String, Vec<Box<ToSql + Send + 'static>>) {
+    pub fn build(self) -> (String, Vec<Box<ToSql + 'static>>) {
         let mut args = vec![];
         let mut query = format!(
             "{} {}",
@@ -88,7 +88,7 @@ impl FilteredOperationBuilder {
 pub struct InsertBuilder {
     table: &'static str,
     extra: &'static str,
-    values: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
+    values: BTreeMap<&'static str, Box<ToSql + 'static>>,
 }
 
 impl InsertBuilder {
@@ -100,7 +100,7 @@ impl InsertBuilder {
         }
     }
 
-    pub fn with_arg<V: ToSql + Send + 'static>(mut self, k: &'static str, v: V) -> Self {
+    pub fn with_arg<V: ToSql + 'static>(mut self, k: &'static str, v: V) -> Self {
         self.values.insert(k, Box::new(v));
         self
     }
@@ -112,7 +112,7 @@ impl InsertBuilder {
     }
 
     /// Builds a query
-    pub fn build(self) -> (String, Vec<Box<ToSql + Send + 'static>>) {
+    pub fn build(self) -> (String, Vec<Box<ToSql + 'static>>) {
         let mut args = vec![];
         let mut query = format!("INSERT INTO {}", self.table);
 
@@ -143,8 +143,8 @@ impl InsertBuilder {
 pub struct UpdateBuilder {
     table: &'static str,
     extra: &'static str,
-    values: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
-    filters: BTreeMap<&'static str, Box<ToSql + Send + 'static>>,
+    values: BTreeMap<&'static str, Box<ToSql + 'static>>,
+    filters: BTreeMap<&'static str, Box<ToSql + 'static>>,
 }
 
 impl UpdateBuilder {
@@ -158,13 +158,13 @@ impl UpdateBuilder {
     }
 
     /// Add filtering arguments
-    pub fn with_filter<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
+    pub fn with_filter<V: ToSql + 'static>(mut self, column: &'static str, value: V) -> Self {
         self.filters.insert(column, Box::new(value));
         self
     }
 
     /// Add values to set
-    pub fn with_value<V: ToSql + Send + 'static>(mut self, column: &'static str, value: V) -> Self {
+    pub fn with_value<V: ToSql + 'static>(mut self, column: &'static str, value: V) -> Self {
         self.values.insert(column, Box::new(value));
         self
     }
@@ -176,7 +176,7 @@ impl UpdateBuilder {
     }
 
     /// Builds a query
-    pub fn build(self) -> (String, Vec<Box<ToSql + Send + 'static>>) {
+    pub fn build(self) -> (String, Vec<Box<ToSql + 'static>>) {
         let mut values = vec![];
         let mut filters = vec![];
 
@@ -216,7 +216,7 @@ impl UpdateBuilder {
 
         query.push_str(" RETURNING *;");
 
-        let args = std::iter::Iterator::chain(values.into_iter(), filters.into_iter()).collect::<Vec<Box<ToSql + Send + 'static>>>();
+        let args = std::iter::Iterator::chain(values.into_iter(), filters.into_iter()).collect::<Vec<Box<ToSql + 'static>>>();
 
         (query, args)
     }
@@ -250,8 +250,8 @@ mod tests {
             "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3 AND filter_column2 = $4 RETURNING *;",
             vec!["a", "b", "c", "d"]
                 .into_iter()
-                .map(|v| Box::new(v) as Box<ToSql + Send + 'static>)
-                .collect::<Vec<Box<ToSql + Send + 'static>>>(),
+                .map(|v| Box::new(v) as Box<ToSql + 'static>)
+                .collect::<Vec<Box<ToSql + 'static>>>(),
         );
 
         assert_eq!(res.0, expectation.0);

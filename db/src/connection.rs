@@ -8,8 +8,8 @@ use tokio_postgres::stmt::Statement;
 use tokio_postgres::transaction::Transaction;
 use tokio_postgres::types::ToSql;
 
-pub type BoxedConnection<E> = Box<Connection<E> + Send>;
-pub type ConnectionFuture<T, E> = Box<Future<Item = (T, BoxedConnection<E>), Error = (E, BoxedConnection<E>)> + Send>;
+pub type BoxedConnection<E> = Box<Connection<E>>;
+pub type ConnectionFuture<T, E> = Box<Future<Item = (T, BoxedConnection<E>), Error = (E, BoxedConnection<E>)>>;
 
 pub trait Connection<E>
 where
@@ -19,15 +19,15 @@ where
     fn query2(
         self: Box<Self>,
         statement: &Statement,
-        params: Vec<Box<ToSql + Send>>,
-    ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E> + Send>;
+        params: Vec<Box<ToSql>>,
+    ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E>>;
     fn commit2(self: Box<Self>) -> ConnectionFuture<(), E>;
     fn unwrap_tokio_postgres(self: Box<Self>) -> tokio_postgres::Connection;
 }
 
 impl<E> Connection<E> for Transaction
 where
-    E: From<tokio_postgres::Error> + Send + Sync + 'static,
+    E: From<tokio_postgres::Error> + 'static,
 {
     fn prepare2(self: Box<Self>, query: &str) -> ConnectionFuture<Statement, E> {
         Box::new(
@@ -40,8 +40,8 @@ where
     fn query2(
         self: Box<Self>,
         statement: &Statement,
-        params: Vec<Box<ToSql + Send>>,
-    ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E> + Send> {
+        params: Vec<Box<ToSql>>,
+    ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E>> {
         Box::new(
             self.query(statement, &params.iter().map(|v| &**v as &ToSql).collect::<Vec<&ToSql>>())
                 .map_err(E::from)
@@ -64,7 +64,7 @@ where
 
 impl<E> Connection<E> for tokio_postgres::Connection
 where
-    E: From<tokio_postgres::Error> + Send + Sync + 'static,
+    E: From<tokio_postgres::Error> + 'static,
 {
     fn prepare2(self: Box<Self>, query: &str) -> ConnectionFuture<Statement, E> {
         Box::new(
@@ -77,8 +77,8 @@ where
     fn query2(
         self: Box<Self>,
         statement: &Statement,
-        params: Vec<Box<ToSql + Send>>,
-    ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E> + Send> {
+        params: Vec<Box<ToSql>>,
+    ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E>> {
         Box::new(
             self.query(statement, &params.iter().map(|v| &**v as &ToSql).collect::<Vec<&ToSql>>())
                 .map_err(E::from)

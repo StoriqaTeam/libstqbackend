@@ -13,10 +13,10 @@ pub struct Pool {
 impl Pool {
     pub fn run<F, U, T, E>(&self, f: F) -> impl Future<Item = T, Error = E>
     where
-        F: FnOnce(BoxedConnection<E>) -> U + Send + 'static,
+        F: FnOnce(BoxedConnection<E>) -> U + 'static,
         U: IntoFuture<Item = (T, BoxedConnection<E>), Error = (E, BoxedConnection<E>)> + 'static,
         T: 'static,
-        E: From<tokio_postgres::Error> + Send + Sync + 'static,
+        E: From<tokio_postgres::Error> + 'static,
     {
         self.inner.run(move |conn| {
             f(Box::new(conn) as BoxedConnection<E>)

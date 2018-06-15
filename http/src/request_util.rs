@@ -8,6 +8,7 @@ use serde::ser::Serialize;
 use serde_json;
 
 header! { (SessionId, "Session-Id") => [String] }
+header! { (CurrencyId, "Currency-Id") => [String] }
 
 #[derive(Clone, Debug, Fail)]
 pub enum ParseError {

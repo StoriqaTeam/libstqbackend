@@ -7,6 +7,7 @@ use futures_state_stream::*;
 use std::rc::Rc;
 use stq_acl as acl;
 use tokio_postgres::rows::Row;
+use tokio_postgres::types::ToSql;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum MultipleOperationError {
@@ -180,6 +181,18 @@ where
     }
 }
 
+fn query_debug(q: &str, args: &[Box<ToSql>]) -> String {
+    let args_dbg = args.iter().enumerate().fold(String::new(), |mut acc, (i, arg)| {
+        if i > 0 {
+            acc += ", ";
+        }
+        acc += &format!("${} = {:?}", i + 1, arg);
+        acc
+    });
+
+    format!("Query: {}. Args: {}", q, &args_dbg)
+}
+
 impl<T, I, F, U> DbRepoInsert<T, I, RepoError> for DbRepoImpl<I, F, U>
 where
     F: Filter,
@@ -202,8 +215,13 @@ where
                         Err((e, _inserter)) => Err((e, conn)),
                     })
                 })
-                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, args, conn)))
-                .and_then(move |(statement, args, conn)| conn.query2(&statement, args).collect())
+                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, query, args, conn)))
+                .and_then(move |(statement, query, args, conn)| {
+                    let err_msg = query_debug(&query, &args);
+                    conn.query2(&statement, args)
+                        .collect()
+                        .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
+                })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running insert").into(), conn)),
         )
@@ -232,8 +250,13 @@ where
                         Err((e, _filter)) => Err((e, conn)),
                     })
                 })
-                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, args, conn)))
-                .and_then(move |(statement, args, conn)| conn.query2(&statement, args).collect())
+                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, query, args, conn)))
+                .and_then(move |(statement, query, args, conn)| {
+                    let err_msg = query_debug(&query, &args);
+                    conn.query2(&statement, args)
+                        .collect()
+                        .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
+                })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running select").into(), conn)),
         )
@@ -262,8 +285,13 @@ where
                         Err((e, _updater)) => Err((e, conn)),
                     })
                 })
-                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, args, conn)))
-                .and_then(move |(statement, args, conn)| conn.query2(&statement, args).collect())
+                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, query, args, conn)))
+                .and_then(move |(statement, query, args, conn)| {
+                    let err_msg = query_debug(&query, &args);
+                    conn.query2(&statement, args)
+                        .collect()
+                        .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
+                })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running update").into(), conn)),
         )
@@ -292,8 +320,13 @@ where
                         Err((e, _filter)) => Err((e, conn)),
                     })
                 })
-                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, args, conn)))
-                .and_then(move |(statement, args, conn)| conn.query2(&statement, args).collect())
+                .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, query, args, conn)))
+                .and_then(move |(statement, query, args, conn)| {
+                    let err_msg = query_debug(&query, &args);
+                    conn.query2(&statement, args)
+                        .collect()
+                        .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
+                })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running delete").into(), conn)),
         )

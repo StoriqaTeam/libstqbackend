@@ -119,8 +119,35 @@ pub type RepoFuture<T> = Box<Future<Item = T, Error = RepoError>>;
 pub type RepoConnection = BoxedConnection<RepoError>;
 pub type RepoConnectionFuture<T> = ConnectionFuture<T, RepoError>;
 
-pub struct DbRepoImpl<I, F, U>
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Action {
+    Insert,
+    Select,
+    Delete,
+    Update,
+}
+
+fn bulk_ensure_access<T>(
+    acl_engine: Rc<acl::AclEngine<(T, Action), RepoError>>,
+    context: (Vec<T>, Action),
+    conn: BoxedConnection<RepoError>,
+) -> impl Future<Item = (Vec<T>, BoxedConnection<RepoError>), Error = (RepoError, BoxedConnection<RepoError>)>
 where
+    T: 'static,
+{
+    let (items, action) = context;
+    future::join_all(items.into_iter().map({
+        let acl_engine = acl_engine.clone();
+        move |entity| acl_engine.ensure_access((entity, action)).map(|(entity, _)| entity)
+    })).then(move |res| match res {
+        Ok(items) => Ok((items, conn)),
+        Err((e, _ctx)) => Err((e, conn)),
+    })
+}
+
+pub struct DbRepoImpl<T, I, F, U>
+where
+    T: From<Row> + 'static,
     I: Inserter + 'static,
     F: Filter + 'static,
     U: Updater + 'static,
@@ -130,10 +157,12 @@ where
     pub select_acl_engine: Rc<acl::AclEngine<F, RepoError>>,
     pub delete_acl_engine: Rc<acl::AclEngine<F, RepoError>>,
     pub update_acl_engine: Rc<acl::AclEngine<U, RepoError>>,
+    pub afterop_acl_engine: Rc<acl::AclEngine<(T, Action), RepoError>>,
 }
 
-impl<I, F, U> DbRepoImpl<I, F, U>
+impl<T, I, F, U> DbRepoImpl<T, I, F, U>
 where
+    T: From<Row> + 'static,
     F: Filter + 'static,
     I: Inserter + 'static,
     U: Updater + 'static,
@@ -145,6 +174,7 @@ where
             select_acl_engine: Rc::new(acl::SystemACL),
             delete_acl_engine: Rc::new(acl::SystemACL),
             update_acl_engine: Rc::new(acl::SystemACL),
+            afterop_acl_engine: Rc::new(acl::SystemACL),
         }
     }
 
@@ -179,6 +209,14 @@ where
         self.update_acl_engine = Rc::new(acl_engine);
         self
     }
+
+    pub fn with_afterop_acl_engine<E>(mut self, acl_engine: E) -> Self
+    where
+        E: acl::AclEngine<(T, Action), RepoError> + 'static,
+    {
+        self.afterop_acl_engine = Rc::new(acl_engine);
+        self
+    }
 }
 
 fn query_debug(q: &str, args: &[Box<ToSql>]) -> String {
@@ -193,7 +231,7 @@ fn query_debug(q: &str, args: &[Box<ToSql>]) -> String {
     format!("Query: {}. Args: {}", q, &args_dbg)
 }
 
-impl<T, I, F, U> DbRepoInsert<T, I, RepoError> for DbRepoImpl<I, F, U>
+impl<T, I, F, U> DbRepoInsert<T, I, RepoError> for DbRepoImpl<T, I, F, U>
 where
     F: Filter,
     T: From<Row> + 'static,
@@ -202,6 +240,8 @@ where
 {
     fn insert(&self, conn: RepoConnection, inserter: I) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
+
+        let afterop_acl_engine = self.afterop_acl_engine.clone();
 
         Box::new(
             self.insert_acl_engine
@@ -223,12 +263,13 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Insert), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running insert").into(), conn)),
         )
     }
 }
 
-impl<T, I, F, U> DbRepoSelect<T, F, RepoError> for DbRepoImpl<I, F, U>
+impl<T, I, F, U> DbRepoSelect<T, F, RepoError> for DbRepoImpl<T, I, F, U>
 where
     T: From<Row> + 'static,
     F: Filter,
@@ -237,6 +278,8 @@ where
 {
     fn select(&self, conn: RepoConnection, filter: F) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
+
+        let afterop_acl_engine = self.afterop_acl_engine.clone();
 
         Box::new(
             self.select_acl_engine
@@ -258,12 +301,13 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Select), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running select").into(), conn)),
         )
     }
 }
 
-impl<T, I, F, U> DbRepoUpdate<T, U, RepoError> for DbRepoImpl<I, F, U>
+impl<T, I, F, U> DbRepoUpdate<T, U, RepoError> for DbRepoImpl<T, I, F, U>
 where
     T: From<Row> + 'static,
     F: Filter,
@@ -272,6 +316,8 @@ where
 {
     fn update(&self, conn: RepoConnection, updater: U) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
+
+        let afterop_acl_engine = self.afterop_acl_engine.clone();
 
         Box::new(
             self.update_acl_engine
@@ -293,12 +339,13 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Update), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running update").into(), conn)),
         )
     }
 }
 
-impl<T, I, F, U> DbRepoDelete<T, F, RepoError> for DbRepoImpl<I, F, U>
+impl<T, I, F, U> DbRepoDelete<T, F, RepoError> for DbRepoImpl<T, I, F, U>
 where
     T: From<Row> + 'static,
     F: Filter,
@@ -307,6 +354,8 @@ where
 {
     fn delete(&self, conn: RepoConnection, filter: F) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
+
+        let afterop_acl_engine = self.afterop_acl_engine.clone();
 
         Box::new(
             self.delete_acl_engine
@@ -328,12 +377,13 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Delete), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running delete").into(), conn)),
         )
     }
 }
 
-impl<T, I, F, U> DbRepo<T, I, F, U, RepoError> for DbRepoImpl<I, F, U>
+impl<T, I, F, U> DbRepo<T, I, F, U, RepoError> for DbRepoImpl<T, I, F, U>
 where
     T: From<Row> + 'static,
     F: Filter,

@@ -2,6 +2,7 @@ use connection::*;
 
 use bb8;
 use bb8_postgres;
+use futures::future;
 use futures::prelude::*;
 use tokio_postgres;
 
@@ -19,10 +20,13 @@ impl Pool {
         E: From<tokio_postgres::Error> + 'static,
     {
         self.inner.run(move |conn| {
-            f(Box::new(conn) as BoxedConnection<E>)
-                .into_future()
-                .map(|(v, conn)| (v, conn.unwrap_tokio_postgres()))
-                .map_err(|(e, conn)| (e, conn.unwrap_tokio_postgres()))
+            conn.transaction().map_err(|(e, conn)| (E::from(e), conn)).and_then(|t| {
+                f(Box::new(t) as BoxedConnection<E>)
+                    .into_future()
+                    .or_else(|(e, conn)| conn.rollback2().and_then(move |(_, conn)| future::err((e, conn))))
+                    .map(|(v, conn)| (v, conn.unwrap_tokio_postgres()))
+                    .map_err(|(e, conn)| (e, conn.unwrap_tokio_postgres()))
+            })
         })
     }
 }

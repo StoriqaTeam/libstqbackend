@@ -22,6 +22,7 @@ where
         params: Vec<Box<ToSql>>,
     ) -> Box<StateStream<Item = Row, State = BoxedConnection<E>, Error = E>>;
     fn commit2(self: Box<Self>) -> ConnectionFuture<(), E>;
+    fn rollback2(self: Box<Self>) -> ConnectionFuture<(), E>;
     fn unwrap_tokio_postgres(self: Box<Self>) -> tokio_postgres::Connection;
 }
 
@@ -57,6 +58,14 @@ where
         )
     }
 
+    fn rollback2(self: Box<Self>) -> ConnectionFuture<(), E> {
+        Box::new(
+            self.rollback()
+                .map(|conn| ((), Box::new(conn) as BoxedConnection<E>))
+                .map_err(|(e, conn)| (E::from(e), Box::new(conn) as BoxedConnection<E>)),
+        )
+    }
+
     fn unwrap_tokio_postgres(self: Box<Self>) -> tokio_postgres::Connection {
         unreachable!()
     }
@@ -87,6 +96,10 @@ where
     }
 
     fn commit2(self: Box<Self>) -> ConnectionFuture<(), E> {
+        Box::new(future::ok(((), self as BoxedConnection<E>)))
+    }
+
+    fn rollback2(self: Box<Self>) -> ConnectionFuture<(), E> {
         Box::new(future::ok(((), self as BoxedConnection<E>)))
     }
 

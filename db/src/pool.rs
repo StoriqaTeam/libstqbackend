@@ -23,7 +23,11 @@ impl Pool {
             conn.transaction().map_err(|(e, conn)| (E::from(e), conn)).and_then(|t| {
                 f(Box::new(t) as BoxedConnection<E>)
                     .into_future()
-                    .or_else(|(e, conn)| conn.rollback2().and_then(move |(_, conn)| future::err((e, conn))))
+                    .then(|res| match res {
+                        Ok((v, conn)) => Box::new(conn.commit2().map(move |(_, conn)| (v, conn)))
+                            as Box<Future<Item = (T, BoxedConnection<E>), Error = (E, BoxedConnection<E>)>>,
+                        Err((e, conn)) => Box::new(conn.rollback2().and_then(move |(_, conn)| future::err((e, conn)))),
+                    })
                     .map(|(v, conn)| (v, conn.unwrap_tokio_postgres()))
                     .map_err(|(e, conn)| (e, conn.unwrap_tokio_postgres()))
             })

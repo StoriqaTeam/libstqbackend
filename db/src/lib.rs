@@ -11,4 +11,5 @@ extern crate tokio_postgres;
 pub mod connection;
 pub mod pool;
 pub mod repo;
+pub mod sequence;
 pub mod statement;

@@ -23,8 +23,8 @@ pub enum Model {
     ModeratorStoreComment,
     UserDeliveryAddress,
     Warehouse,
-    WarehouseProduct,
-    WarehouseUser,
+    Stock,
+    Role,
     Order,
 }
 
@@ -50,8 +50,8 @@ impl fmt::Display for Model {
                 Model::ModeratorStoreComment => "moderator_store_comment",
                 Model::UserDeliveryAddress => "user_delivery_address",
                 Model::Warehouse => "warehouse",
-                Model::WarehouseProduct => "warehouse_product",
-                Model::WarehouseUser => "warehouse_user",
+                Model::Stock => "stock",
+                Model::Role => "role",
                 Model::Order => "order",
             }
         )
@@ -79,8 +79,8 @@ impl FromStr for Model {
             "moderator_store_comment" => Ok(Model::ModeratorStoreComment),
             "user_delivery_address" => Ok(Model::UserDeliveryAddress),
             "warehouse" => Ok(Model::Warehouse),
-            "warehouse_product" => Ok(Model::WarehouseProduct),
-            "warehouse_user" => Ok(Model::WarehouseUser),
+            "stock" => Ok(Model::Stock),
+            "role" => Ok(Model::Role),
             "order" => Ok(Model::Order),
             _ => Err(FieldError::new(
                 "Unknown model",
@@ -111,8 +111,8 @@ impl Model {
             Model::ModeratorStoreComment => "moderator_store_comments".to_string(),
             Model::UserDeliveryAddress => "user_delivery_address".to_string(),
             Model::Warehouse => "warehouses".to_string(),
-            Model::WarehouseProduct => "warehouse_products".to_string(),
-            Model::WarehouseUser => "warehouse_users".to_string(),
+            Model::Stock => "stocks".to_string(),
+            Model::Role => "roles".to_string(),
             Model::Order => "orders".to_string(),
         }
     }

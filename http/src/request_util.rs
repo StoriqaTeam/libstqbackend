@@ -35,7 +35,11 @@ where
         read_body(body)
             .map_err(|err| err.context(ParseError::ReadError).into())
             .and_then(move |body| {
-                serde_json::from_str::<T>(&body).map_err(move |err| {
+                if body.is_empty() {
+                    serde_json::from_value(serde_json::Value::Null)
+                } else {
+                    serde_json::from_str::<T>(&body)
+                }.map_err(move |err| {
                     err.context(format!("Failed to parse as JSON: {}", body))
                         .context(ParseError::ConvertError)
                         .into()

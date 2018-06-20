@@ -1,9 +1,10 @@
 use std;
 use std::collections::BTreeMap;
+use std::fmt;
 use tokio_postgres::types::ToSql;
 
 pub trait Filter {
-    fn into_filtered_operation_builder(self, op: FilteredOperation, table: &'static str) -> FilteredOperationBuilder;
+    fn into_filtered_operation_builder(self, table: &'static str) -> FilteredOperationBuilder;
 }
 
 pub trait Inserter {
@@ -21,19 +22,98 @@ pub enum FilteredOperation {
     Delete,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ComparisonMode {
+    LT,
+    LTE,
+    EQ,
+    GTE,
+    GT,
+}
+
+type ColumnFilters = Vec<(ComparisonMode, Box<ToSql + 'static>)>;
+type Filters = BTreeMap<&'static str, ColumnFilters>;
+
+fn build_where_from_filters(filters: Filters, mut i: usize) -> (String, Vec<Box<ToSql + 'static>>) {
+    let mut query = String::new();
+    let mut args = vec![];
+
+    let mut started = false;
+
+    for (col, filter) in filters.into_iter() {
+        for (mode, value) in filter.into_iter() {
+            if started {
+                query.push_str(" AND ");
+            }
+            query.push_str(&format!("{} {} ${}", col, &mode.to_string(), i));
+            args.push(value);
+
+            started = true;
+            i += 1;
+        }
+    }
+
+    (query, args)
+}
+
+impl fmt::Display for ComparisonMode {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use self::ComparisonMode::*;
+
+        write!(
+            fmt,
+            "{}",
+            match self {
+                LT => "<",
+                LTE => "<=",
+                EQ => "=",
+                GTE => ">=",
+                GT => ">",
+            }
+        )
+    }
+}
+
+/// One of the two possible range limits.
+pub struct RangeLimit<V>
+where
+    V: ToSql + 'static,
+{
+    value: V,
+    inclusive: bool,
+}
+
+/// Range specifier to be used for filtering.
+pub enum Range<V>
+where
+    V: ToSql + 'static,
+{
+    Exact(V),
+    From(RangeLimit<V>),
+    To(RangeLimit<V>),
+    Between((RangeLimit<V>, RangeLimit<V>)),
+}
+
+impl<V> From<V> for Range<V>
+where
+    V: ToSql + 'static,
+{
+    fn from(v: V) -> Self {
+        Range::Exact(v)
+    }
+}
+
 /// Construct a simple select or delete query.
 pub struct FilteredOperationBuilder {
-    op: FilteredOperation,
     table: &'static str,
     extra: &'static str,
-    filters: BTreeMap<&'static str, Box<ToSql + 'static>>,
+    filters: Filters,
 }
 
 impl FilteredOperationBuilder {
     /// Create a new builder
-    pub fn new(op: FilteredOperation, table: &'static str) -> Self {
+    pub fn new(table: &'static str) -> Self {
         Self {
-            op,
             table,
             extra: Default::default(),
             filters: Default::default(),
@@ -41,8 +121,36 @@ impl FilteredOperationBuilder {
     }
 
     /// Add filtering arguments
-    pub fn with_arg<V: ToSql + 'static>(mut self, column: &'static str, value: V) -> Self {
-        self.filters.insert(column, Box::new(value));
+    pub fn with_filter<R, V>(mut self, column: &'static str, range: R) -> Self
+    where
+        R: Into<Range<V>>,
+        V: ToSql + 'static,
+    {
+        use self::Range::*;
+
+        let new_filters: Vec<(ComparisonMode, Box<ToSql>)> = match range.into() {
+            Exact(v) => vec![(ComparisonMode::EQ, Box::new(v))],
+            From(from) => vec![(
+                if from.inclusive { ComparisonMode::GTE } else { ComparisonMode::GT },
+                Box::new(from.value),
+            )],
+            To(to) => vec![(
+                if to.inclusive { ComparisonMode::LTE } else { ComparisonMode::LT },
+                Box::new(to.value),
+            )],
+            Between((from, to)) => vec![
+                (
+                    if from.inclusive { ComparisonMode::GTE } else { ComparisonMode::GT },
+                    Box::new(from.value),
+                ),
+                (
+                    if to.inclusive { ComparisonMode::LTE } else { ComparisonMode::LT },
+                    Box::new(to.value),
+                ),
+            ],
+        };
+
+        self.filters.insert(column, new_filters);
         self
     }
 
@@ -53,31 +161,27 @@ impl FilteredOperationBuilder {
     }
 
     /// Build a query
-    pub fn build(self) -> (String, Vec<Box<ToSql + 'static>>) {
-        let mut args = vec![];
-        let mut query = format!(
-            "{} {}",
-            match self.op {
-                FilteredOperation::Select => "SELECT * FROM",
-                FilteredOperation::Delete => "DELETE FROM",
-            },
-            self.table
-        );
+    pub fn build(self, op: FilteredOperation) -> (String, Vec<Box<ToSql + 'static>>) {
+        let (where_q, args) = build_where_from_filters(self.filters, 1);
 
-        for (i, (col, arg)) in self.filters.into_iter().enumerate() {
-            if i == 0 {
-                query.push_str(" WHERE ");
-            } else {
-                query.push_str(" AND ");
-            }
-            query.push_str(&format!("{} = ${}", col, i + 1));
-            args.push(arg);
-        }
         let out = format!(
-            "{} {}{};",
-            &query,
-            self.extra,
-            if self.op == FilteredOperation::Delete { " RETURNING *" } else { "" }
+            "{} FROM {}{}{}{};",
+            match op {
+                FilteredOperation::Select => "SELECT *",
+                FilteredOperation::Delete => "DELETE",
+            },
+            self.table,
+            if !where_q.is_empty() {
+                format!(" WHERE {}", where_q)
+            } else {
+                "".to_string()
+            },
+            if !self.extra.is_empty() {
+                format!(" {}", self.extra)
+            } else {
+                "".to_string()
+            },
+            if op == FilteredOperation::Delete { " RETURNING *" } else { "" }
         );
 
         (out, args)
@@ -119,13 +223,14 @@ impl InsertBuilder {
         let mut col_string = String::new();
         let mut arg_string = String::new();
         for (i, (col, arg)) in self.values.into_iter().enumerate() {
-            if i > 0 {
+            let arg_index = i + 1;
+            if arg_index > 1 {
                 col_string.push_str(", ");
                 arg_string.push_str(", ");
             }
 
             col_string.push_str(&col);
-            arg_string.push_str(&format!("${}", i + 1));
+            arg_string.push_str(&format!("${}", arg_index));
             args.push(arg);
         }
         query = format!("{} ({}) VALUES ({})", &query, &col_string, &arg_string);
@@ -140,29 +245,14 @@ impl InsertBuilder {
     }
 }
 
+/// Construct a simple update query.
 pub struct UpdateBuilder {
-    table: &'static str,
     extra: &'static str,
     values: BTreeMap<&'static str, Box<ToSql + 'static>>,
-    filters: BTreeMap<&'static str, Box<ToSql + 'static>>,
+    filters: FilteredOperationBuilder,
 }
 
 impl UpdateBuilder {
-    pub fn new(table: &'static str) -> Self {
-        Self {
-            table,
-            extra: Default::default(),
-            values: Default::default(),
-            filters: Default::default(),
-        }
-    }
-
-    /// Add filtering arguments
-    pub fn with_filter<V: ToSql + 'static>(mut self, column: &'static str, value: V) -> Self {
-        self.filters.insert(column, Box::new(value));
-        self
-    }
-
     /// Add values to set
     pub fn with_value<V: ToSql + 'static>(mut self, column: &'static str, value: V) -> Self {
         self.values.insert(column, Box::new(value));
@@ -175,10 +265,13 @@ impl UpdateBuilder {
         self
     }
 
-    /// Builds a query
+    /// Builds an UPDATE query if update values are set and SELECT query otherwise.
     pub fn build(self) -> (String, Vec<Box<ToSql + 'static>>) {
+        if self.values.is_empty() {
+            return self.filters.build(FilteredOperation::Select);
+        }
+
         let mut values = vec![];
-        let mut filters = vec![];
 
         let mut arg_index = 1;
 
@@ -195,20 +288,18 @@ impl UpdateBuilder {
             values.push(arg);
         }
 
-        let mut filter_string = String::new();
-        for (col, arg) in self.filters {
-            if filter_string.is_empty() {
-                filter_string.push_str("WHERE ");
+        let (filter_string, filters) = build_where_from_filters(self.filters.filters, arg_index);
+
+        let mut query = format!(
+            "UPDATE {} {}{}",
+            self.filters.table,
+            &value_string,
+            if !filter_string.is_empty() {
+                format!(" WHERE {}", &filter_string)
             } else {
-                filter_string.push_str(" AND ");
+                "".to_string()
             }
-
-            filter_string.push_str(&format!("{} = ${}", col, arg_index));
-            arg_index += 1;
-            filters.push(arg);
-        }
-
-        let mut query = format!("UPDATE {} {} {}", self.table, &value_string, &filter_string);
+        );
 
         if !self.extra.is_empty() {
             query.push_str(&format!(" {}", self.extra));
@@ -225,9 +316,8 @@ impl UpdateBuilder {
 impl From<FilteredOperationBuilder> for UpdateBuilder {
     fn from(v: FilteredOperationBuilder) -> Self {
         Self {
-            table: v.table,
             extra: v.extra,
-            filters: v.filters,
+            filters: v,
             values: Default::default(),
         }
     }
@@ -238,17 +328,61 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_select_builder() {
+        let expectation = (
+            "SELECT * FROM my_table WHERE filter_column1 = $1 AND filter_column2 > $2 AND filter_column2 <= $3;",
+            vec![3, 25, 125]
+                .into_iter()
+                .map(|v| Box::new(v) as Box<ToSql + 'static>)
+                .collect::<Vec<Box<ToSql + 'static>>>(),
+        );
+
+        let res = FilteredOperationBuilder::new("my_table")
+            .with_filter("filter_column1", 3)
+            .with_filter(
+                "filter_column2",
+                Range::Between((
+                    RangeLimit {
+                        value: 25,
+                        inclusive: false,
+                    },
+                    RangeLimit {
+                        value: 125,
+                        inclusive: true,
+                    },
+                )),
+            )
+            .build(FilteredOperation::Select);
+
+        assert_eq!(res.0, expectation.0);
+        assert_eq!(format!("{:?}", res.1), format!("{:?}", expectation.1));
+    }
+
+    #[test]
     fn test_update_builder() {
-        let res = UpdateBuilder::new("my_table")
-            .with_filter("filter_column1", "c")
-            .with_filter("filter_column2", "d")
-            .with_value("value_column1", "a")
-            .with_value("value_column2", "b")
+        let res = UpdateBuilder::from(
+            FilteredOperationBuilder::new("my_table")
+                .with_filter("filter_column1", 3)
+                .with_filter(
+                    "filter_column2",
+                    Range::Between((
+                        RangeLimit {
+                            value: 25,
+                            inclusive: false,
+                        },
+                        RangeLimit {
+                            value: 125,
+                            inclusive: true,
+                        },
+                    )),
+                ),
+        ).with_value("value_column1", 1)
+            .with_value("value_column2", 2)
             .build();
 
         let expectation = (
-            "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3 AND filter_column2 = $4 RETURNING *;",
-            vec!["a", "b", "c", "d"]
+            "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3 AND filter_column2 > $4 AND filter_column2 <= $5 RETURNING *;",
+            vec![1, 2, 3, 25, 125]
                 .into_iter()
                 .map(|v| Box::new(v) as Box<ToSql + 'static>)
                 .collect::<Vec<Box<ToSql + 'static>>>(),

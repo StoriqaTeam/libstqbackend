@@ -287,7 +287,7 @@ where
                 .then(move |res| {
                     future::result(match res {
                         Ok(filter) => {
-                            let (query, args) = filter.into_filtered_operation_builder(FilteredOperation::Select, table).build();
+                            let (query, args) = filter.into_filtered_operation_builder(table).build(FilteredOperation::Select);
                             Ok((query, args, conn))
                         }
                         Err((e, _filter)) => Err((e, conn)),
@@ -363,7 +363,7 @@ where
                 .then(move |res| {
                     future::result(match res {
                         Ok(filter) => {
-                            let (query, args) = filter.into_filtered_operation_builder(FilteredOperation::Delete, table).build();
+                            let (query, args) = filter.into_filtered_operation_builder(table).build(FilteredOperation::Delete);
                             Ok((query, args, conn))
                         }
                         Err((e, _filter)) => Err((e, conn)),

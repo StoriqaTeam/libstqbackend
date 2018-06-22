@@ -15,10 +15,25 @@ pub trait Updater {
     fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum SelectOperation {
+    Count,
+}
+
+impl SelectOperation {
+    fn to_sql(&self) -> &'static str {
+        use self::SelectOperation::*;
+
+        match self {
+            Count => "count",
+        }
+    }
+}
+
 /// Filtering operation
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FilteredOperation {
-    Select,
+    Select { op: Option<SelectOperation>, limit: Option<i32> },
     Delete,
 }
 
@@ -108,6 +123,7 @@ pub struct FilteredOperationBuilder {
     table: &'static str,
     extra: &'static str,
     filters: Filters,
+    limit: Option<i32>,
 }
 
 impl FilteredOperationBuilder {
@@ -117,6 +133,7 @@ impl FilteredOperationBuilder {
             table,
             extra: Default::default(),
             filters: Default::default(),
+            limit: Default::default(),
         }
     }
 
@@ -154,6 +171,11 @@ impl FilteredOperationBuilder {
         self
     }
 
+    pub fn with_limit(mut self, limit: Option<i32>) -> Self {
+        self.limit = limit;
+        self
+    }
+
     /// Add additional statements before the semicolon
     pub fn with_extra(mut self, extra: &'static str) -> Self {
         self.extra = extra;
@@ -166,9 +188,12 @@ impl FilteredOperationBuilder {
 
         let out = format!(
             "{} FROM {}{}{}{};",
-            match op {
-                FilteredOperation::Select => "SELECT *",
-                FilteredOperation::Delete => "DELETE",
+            &match op {
+                FilteredOperation::Select { op, .. } => match op {
+                    None => "SELECT *".to_string(),
+                    Some(op) => format!("SELECT {}(*)", op.to_sql()),
+                },
+                FilteredOperation::Delete => "DELETE".to_string(),
             },
             self.table,
             if !where_q.is_empty() {
@@ -181,7 +206,16 @@ impl FilteredOperationBuilder {
             } else {
                 "".to_string()
             },
-            if op == FilteredOperation::Delete { " RETURNING *" } else { "" }
+            &match op {
+                FilteredOperation::Delete => " RETURNING *".to_string(),
+                FilteredOperation::Select { limit, .. } => {
+                    if let Some(v) = limit {
+                        format!(" LIMIT {}", v)
+                    } else {
+                        "".to_string()
+                    }
+                }
+            }
         );
 
         (out, args)
@@ -268,7 +302,7 @@ impl UpdateBuilder {
     /// Builds an UPDATE query if update values are set and SELECT query otherwise.
     pub fn build(self) -> (String, Vec<Box<ToSql + 'static>>) {
         if self.values.is_empty() {
-            return self.filters.build(FilteredOperation::Select);
+            return self.filters.build(FilteredOperation::Select { op: None, limit: None });
         }
 
         let mut values = vec![];
@@ -330,7 +364,7 @@ mod tests {
     #[test]
     fn test_select_builder() {
         let expectation = (
-            "SELECT * FROM my_table WHERE filter_column1 = $1 AND filter_column2 > $2 AND filter_column2 <= $3;",
+            "SELECT count(*) FROM my_table WHERE filter_column1 = $1 AND filter_column2 > $2 AND filter_column2 <= $3 LIMIT 5;",
             vec![3, 25, 125]
                 .into_iter()
                 .map(|v| Box::new(v) as Box<ToSql + 'static>)
@@ -352,7 +386,10 @@ mod tests {
                     },
                 )),
             )
-            .build(FilteredOperation::Select);
+            .build(FilteredOperation::Select {
+                op: Some(SelectOperation::Count),
+                limit: Some(5),
+            });
 
         assert_eq!(res.0, expectation.0);
         assert_eq!(format!("{:?}", res.1), format!("{:?}", expectation.1));

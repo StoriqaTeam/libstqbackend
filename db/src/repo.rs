@@ -1,5 +1,5 @@
 use super::connection::*;
-use super::statement::{Filter, FilteredOperation, Inserter, Updater};
+use super::statement::{Filter, FilteredOperation, Inserter, SelectOperation, Updater};
 
 use failure;
 use futures::*;
@@ -41,7 +41,17 @@ pub trait DbRepoInsert<T: 'static, I: Inserter, E: From<MultipleOperationError> 
 }
 
 pub trait DbRepoSelect<T: 'static, F: Filter, E: From<MultipleOperationError> + 'static> {
-    fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E>;
+    fn select_full(
+        &self,
+        conn: BoxedConnection<E>,
+        filter: F,
+        limit: Option<i32>,
+        op: Option<SelectOperation>,
+    ) -> ConnectionFuture<Vec<T>, E>;
+
+    fn select(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<Vec<T>, E> {
+        self.select_full(conn, filter, None, None)
+    }
 
     fn select_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
         Box::new(self.select(conn, filter).and_then(|(mut data, conn)| {
@@ -276,7 +286,13 @@ where
     I: Inserter,
     U: Updater,
 {
-    fn select(&self, conn: RepoConnection, filter: F) -> RepoConnectionFuture<Vec<T>> {
+    fn select_full(
+        &self,
+        conn: RepoConnection,
+        filter: F,
+        limit: Option<i32>,
+        op: Option<SelectOperation>,
+    ) -> RepoConnectionFuture<Vec<T>> {
         let table = self.table;
 
         let afterop_acl_engine = self.afterop_acl_engine.clone();
@@ -287,7 +303,9 @@ where
                 .then(move |res| {
                     future::result(match res {
                         Ok(filter) => {
-                            let (query, args) = filter.into_filtered_operation_builder(table).build(FilteredOperation::Select);
+                            let (query, args) = filter
+                                .into_filtered_operation_builder(table)
+                                .build(FilteredOperation::Select { op, limit });
                             Ok((query, args, conn))
                         }
                         Err((e, _filter)) => Err((e, conn)),

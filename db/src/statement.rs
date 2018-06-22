@@ -31,7 +31,7 @@ impl SelectOperation {
 }
 
 /// Filtering operation
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FilteredOperation {
     Select { op: Option<SelectOperation>, limit: Option<i32> },
     Delete,
@@ -90,6 +90,7 @@ impl fmt::Display for ComparisonMode {
 }
 
 /// One of the two possible range limits.
+#[derive(Clone, Debug, PartialEq)]
 pub struct RangeLimit<V>
 where
     V: ToSql + 'static,
@@ -99,6 +100,7 @@ where
 }
 
 /// Range specifier to be used for filtering.
+#[derive(Clone, Debug, PartialEq)]
 pub enum Range<V>
 where
     V: ToSql + 'static,

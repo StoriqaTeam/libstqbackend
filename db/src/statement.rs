@@ -95,8 +95,8 @@ pub struct RangeLimit<V>
 where
     V: ToSql + 'static,
 {
-    value: V,
-    inclusive: bool,
+    pub value: V,
+    pub inclusive: bool,
 }
 
 /// Range specifier to be used for filtering.

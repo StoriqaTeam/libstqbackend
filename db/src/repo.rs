@@ -300,16 +300,20 @@ where
         Box::new(
             self.select_acl_engine
                 .ensure_access(filter)
-                .then(move |res| {
-                    future::result(match res {
-                        Ok(filter) => {
-                            let (query, args) = filter
-                                .into_filtered_operation_builder(table)
-                                .build(FilteredOperation::Select { op, limit });
-                            Ok((query, args, conn))
+                .then(move |res| match res {
+                    Ok(filter) => {
+                        if let Some(limit) = limit.clone() {
+                            if limit < 1 {
+                                return Box::new(future::err((format_err!("Limit cannot be less than 1"), conn)));
+                            }
                         }
-                        Err((e, _filter)) => Err((e, conn)),
-                    })
+
+                        let (query, args) = filter
+                            .into_filtered_operation_builder(table)
+                            .build(FilteredOperation::Select { op, limit });
+                        Box::new(future::ok((query, args, conn)))
+                    }
+                    Err((e, _filter)) => Box::new(future::err((e, conn))),
                 })
                 .and_then(move |(query, args, conn)| conn.prepare2(&query).map(move |(statement, conn)| (statement, query, args, conn)))
                 .and_then(move |(statement, query, args, conn)| {

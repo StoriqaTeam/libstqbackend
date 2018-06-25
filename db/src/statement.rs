@@ -91,32 +91,51 @@ impl fmt::Display for ComparisonMode {
 
 /// One of the two possible range limits.
 #[derive(Clone, Debug, PartialEq)]
-pub struct RangeLimit<V>
-where
-    V: ToSql + 'static,
-{
-    pub value: V,
+pub struct RangeLimit<T> {
+    pub value: T,
     pub inclusive: bool,
+}
+
+impl<T> RangeLimit<T> {
+    pub fn convert<U>(self) -> RangeLimit<U>
+    where
+        T: Into<U>,
+    {
+        RangeLimit {
+            value: self.value.into(),
+            inclusive: self.inclusive,
+        }
+    }
 }
 
 /// Range specifier to be used for filtering.
 #[derive(Clone, Debug, PartialEq)]
-pub enum Range<V>
-where
-    V: ToSql + 'static,
-{
-    Exact(V),
-    From(RangeLimit<V>),
-    To(RangeLimit<V>),
-    Between((RangeLimit<V>, RangeLimit<V>)),
+pub enum Range<T> {
+    Exact(T),
+    From(RangeLimit<T>),
+    To(RangeLimit<T>),
+    Between((RangeLimit<T>, RangeLimit<T>)),
 }
 
-impl<V> From<V> for Range<V>
-where
-    V: ToSql + 'static,
-{
-    fn from(v: V) -> Self {
+impl<T> From<T> for Range<T> {
+    fn from(v: T) -> Self {
         Range::Exact(v)
+    }
+}
+
+impl<T> Range<T> {
+    pub fn convert<U>(self) -> Range<U>
+    where
+        T: Into<U>,
+    {
+        use self::Range::*;
+
+        match self {
+            Exact(v) => Exact(v.into()),
+            From(from) => From(from.convert::<U>()),
+            To(to) => To(to.convert::<U>()),
+            Between((from, to)) => Between((from.convert::<U>(), to.convert::<U>())),
+        }
     }
 }
 
@@ -140,10 +159,10 @@ impl FilteredOperationBuilder {
     }
 
     /// Add filtering arguments
-    pub fn with_filter<R, V>(mut self, column: &'static str, range: R) -> Self
+    pub fn with_filter<T, R>(mut self, column: &'static str, range: R) -> Self
     where
-        R: Into<Range<V>>,
-        V: ToSql + 'static,
+        T: ToSql + 'static,
+        R: Into<Range<T>>,
     {
         use self::Range::*;
 
@@ -375,7 +394,7 @@ mod tests {
 
         let res = FilteredOperationBuilder::new("my_table")
             .with_filter("filter_column1", 3)
-            .with_filter(
+            .with_filter::<i32, _>(
                 "filter_column2",
                 Range::Between((
                     RangeLimit {
@@ -402,7 +421,7 @@ mod tests {
         let res = UpdateBuilder::from(
             FilteredOperationBuilder::new("my_table")
                 .with_filter("filter_column1", 3)
-                .with_filter(
+                .with_filter::<i32, _>(
                     "filter_column2",
                     Range::Between((
                         RangeLimit {

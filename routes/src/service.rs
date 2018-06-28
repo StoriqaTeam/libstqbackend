@@ -9,6 +9,7 @@ pub enum Service {
     Stores,
     Orders,
     Warehouses,
+    Notifications,
 }
 
 impl fmt::Display for Service {
@@ -21,6 +22,7 @@ impl fmt::Display for Service {
                 Service::Stores => "stores",
                 Service::Orders => "orders",
                 Service::Warehouses => "warehouses",
+                Service::Notifications => "notifications",
             }
         )
     }
@@ -35,6 +37,7 @@ impl FromStr for Service {
             "stores" => Ok(Service::Stores),
             "orders" => Ok(Service::Orders),
             "warehouses" => Ok(Service::Warehouses),
+            "notifications" => Ok(Service::Notifications),
             _ => Err(FieldError::new(
                 "Unknown service",
                 graphql_value!({ "code": 300, "details": {

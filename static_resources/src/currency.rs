@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use juniper::FieldError;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Currency {
     Rouble = 1,
     Euro,

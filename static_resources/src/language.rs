@@ -44,7 +44,6 @@ impl fmt::Display for Language {
     }
 }
 
-
 impl Language {
     pub fn as_vec() -> Vec<LanguageGraphQl> {
         vec![
@@ -61,7 +60,6 @@ impl Language {
             .map(|value| LanguageGraphQl::new(value.to_string()))
             .collect()
     }
-    
 }
 
 #[derive(GraphQLInputObject, Serialize, Clone, Debug, PartialEq)]
@@ -72,7 +70,6 @@ pub struct TranslationInput {
     #[graphql(description = "Text")]
     pub text: String,
 }
-
 
 #[derive(GraphQLObject, Deserialize, Clone, Debug, PartialEq)]
 #[graphql(description = "Text with language")]
@@ -89,15 +86,14 @@ impl Translation {
     }
 }
 
-
 #[derive(GraphQLObject, Serialize, Deserialize, Debug)]
 pub struct LanguageGraphQl {
-    #[graphql(description="ISO 639-1 code")]
+    #[graphql(description = "ISO 639-1 code")]
     pub iso_code: String,
 }
 
 impl LanguageGraphQl {
     pub fn new(iso_code: String) -> Self {
-        Self { iso_code}
+        Self { iso_code }
     }
 }

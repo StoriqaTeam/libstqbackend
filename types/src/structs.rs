@@ -1,3 +1,4 @@
+use std::cmp::{Ord, Ordering};
 use std::fmt;
 
 use uuid::Uuid;
@@ -41,6 +42,18 @@ pub struct ProductId(pub i32);
 impl From<ProductId> for i32 {
     fn from(prod: ProductId) -> i32 {
         prod.0
+    }
+}
+
+impl Ord for ProductId {
+    fn cmp(&self, other: &ProductId) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+impl PartialOrd for ProductId {
+    fn partial_cmp(&self, other: &ProductId) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 

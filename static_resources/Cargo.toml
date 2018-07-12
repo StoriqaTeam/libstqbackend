@@ -8,3 +8,4 @@ serde = "1.0"
 serde_derive = "1.0"
 isolang = "0.2"
 diesel = { version = "1.3.2", features = ["postgres", "extras"] }
+stq_diesel_macro_derive = { path = "../diesel_macro_derive" }

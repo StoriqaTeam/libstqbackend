@@ -56,6 +56,7 @@ fn match_types_names_to_diesel_types(type_name: String) -> Option<proc_macro2::T
         ref x if x == "uuid" => Some(quote!{::diesel::sql_types::Uuid}),
         ref x if x == "i32" => Some(quote!{::diesel::sql_types::Integer}),
         ref x if x == "string" => Some(quote!{::diesel::sql_types::VarChar}),
+        ref x if x == "f64" => Some(quote!{::diesel::sql_types::Double}),
         _ => None,
     }
 }

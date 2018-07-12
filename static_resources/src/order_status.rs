@@ -3,7 +3,7 @@
 pub enum OrderStatus {
     #[graphql(description = "State set on order creation.")]
     #[serde(rename = "payment_awaited")]
-    PaimentAwaited,
+    PaymentAwaited,
 
     #[graphql(description = "Set after payment by request of billing")]
     #[serde(rename = "paid")]
@@ -37,7 +37,7 @@ pub enum OrderStatus {
 impl OrderStatus {
     pub fn as_vec() -> Vec<OrderStatus> {
         vec![
-            OrderStatus::PaimentAwaited,
+            OrderStatus::PaymentAwaited,
             OrderStatus::Paid,
             OrderStatus::InProcessing,
             OrderStatus::Cancelled,

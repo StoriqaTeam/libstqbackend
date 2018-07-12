@@ -8,6 +8,12 @@ use stq_static_resources::Currency;
          Deserialize, DieselTypes)]
 pub struct UserId(pub i32);
 
+impl From<UserId> for i32 {
+    fn from(prod: UserId) -> i32 {
+        prod.0
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Display, PartialEq, Eq, FromStr, Hash, Serialize,
          Deserialize, DieselTypes)]
 pub struct RoleEntryId(pub Uuid);
@@ -32,6 +38,12 @@ impl RoleId {
          Deserialize, DieselTypes)]
 pub struct ProductId(pub i32);
 
+impl From<ProductId> for i32 {
+    fn from(prod: ProductId) -> i32 {
+        prod.0
+    }
+}
+
 #[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, FromStr, Hash, Serialize,
          Deserialize, DieselTypes)]
 pub struct Quantity(pub i32);
@@ -39,6 +51,12 @@ pub struct Quantity(pub i32);
 #[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, FromStr, Hash, Serialize,
          Deserialize, DieselTypes)]
 pub struct StoreId(pub i32);
+
+impl From<StoreId> for i32 {
+    fn from(prod: StoreId) -> i32 {
+        prod.0
+    }
+}
 
 #[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, FromStr, Hash, Serialize,
          Deserialize, DieselTypes)]

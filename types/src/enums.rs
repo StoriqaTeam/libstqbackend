@@ -1,5 +1,12 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
-pub enum Role {
+pub enum StoresRole {
+    Superuser,
+    User,
+    StoreManager,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+pub enum UsersRole {
     Superuser,
     User,
 }

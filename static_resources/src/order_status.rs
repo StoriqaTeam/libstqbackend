@@ -1,11 +1,20 @@
+use std::error::Error;
+use std::fmt;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
+
 #[derive(GraphQLEnum, Deserialize, Serialize, Debug, Clone, PartialEq, DieselTypes)]
-#[graphql(name = "OrderStatus", description = "Current order status")]
-pub enum OrderStatus {
+#[graphql(name = "OrderState", description = "Current order status")]
+pub enum OrderState {
     #[graphql(description = "State set on order creation.")]
     #[serde(rename = "payment_awaited")]
     PaymentAwaited,
 
-    #[graphql(description = "Set after payment by request of billing")]
+    #[graphql(description = "State set on user's transaction appeared in blockchain, but is not included.")]
+    #[serde(rename = "transaction_pending")]
+    TransactionPending,
+
+    #[graphql(description = "Set after payment is accepted by blockchain by request of billing")]
     #[serde(rename = "paid")]
     Paid,
 
@@ -34,17 +43,61 @@ pub enum OrderStatus {
     Complete,
 }
 
-impl OrderStatus {
-    pub fn as_vec() -> Vec<OrderStatus> {
+impl FromStr for OrderState {
+    type Err = Box<Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "payment_awaited" => OrderState::PaymentAwaited,
+            "transaction_pending" => OrderState::TransactionPending,
+            "paid" => OrderState::Paid,
+            "in_processing" => OrderState::InProcessing,
+            "cancelled" => OrderState::Cancelled,
+            "sent" => OrderState::Sent,
+            "delivered" => OrderState::Delivered,
+            "received" => OrderState::Received,
+            "complete" => OrderState::Complete,
+            other => {
+                return Err(format!("Unrecognized enum variant: {}", other).to_string().into());
+            }
+        })
+    }
+}
+
+impl Display for OrderState {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        use self::OrderState::*;
+
+        write!(
+            f,
+            "{}",
+            match self {
+                PaymentAwaited => "payment_awaited",
+                TransactionPending => "transaction_pending",
+                Paid => "paid",
+                InProcessing => "in_processing",
+                Cancelled => "cancelled",
+                Sent => "sent",
+                Delivered => "delivered",
+                Received => "received",
+                Complete => "complete",
+            }
+        )
+    }
+}
+
+impl OrderState {
+    pub fn as_vec() -> Vec<OrderState> {
         vec![
-            OrderStatus::PaymentAwaited,
-            OrderStatus::Paid,
-            OrderStatus::InProcessing,
-            OrderStatus::Cancelled,
-            OrderStatus::Sent,
-            OrderStatus::Delivered,
-            OrderStatus::Received,
-            OrderStatus::Complete,
+            OrderState::PaymentAwaited,
+            OrderState::TransactionPending,
+            OrderState::Paid,
+            OrderState::InProcessing,
+            OrderState::Cancelled,
+            OrderState::Sent,
+            OrderState::Delivered,
+            OrderState::Received,
+            OrderState::Complete,
         ]
     }
 }

@@ -1,16 +1,15 @@
-use std::cmp::{Ord, Ordering};
 use std::fmt;
 
 use uuid::Uuid;
 
 use stq_static_resources::Currency;
 
-#[derive(Clone, Copy, Debug, Default, Display, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Default, Display, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct UserId(pub i32);
 
-#[derive(Clone, Copy, Debug, Default, Display, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Default, Display, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct RoleEntryId(pub Uuid);
 
 impl RoleEntryId {
@@ -19,8 +18,8 @@ impl RoleEntryId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, From, FromStr, Into, Display, Eq, PartialEq, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Default, From, FromStr, Into, Display, Eq, PartialOrd, Ord,
+         PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct RoleId(pub Uuid);
 
 impl RoleId {
@@ -29,48 +28,24 @@ impl RoleId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct ProductId(pub i32);
 
-impl Ord for ProductId {
-    fn cmp(&self, other: &ProductId) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-impl PartialOrd for ProductId {
-    fn partial_cmp(&self, other: &ProductId) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct BaseProductId(pub i32);
 
-impl Ord for BaseProductId {
-    fn cmp(&self, other: &BaseProductId) -> Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-impl PartialOrd for BaseProductId {
-    fn partial_cmp(&self, other: &BaseProductId) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct Quantity(pub i32);
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct StoreId(pub i32);
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct WarehouseId(pub Uuid);
 impl WarehouseId {
     pub fn new() -> Self {
@@ -78,8 +53,8 @@ impl WarehouseId {
     }
 }
 
-#[derive(Clone, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash, Serialize,
-         Deserialize, DieselTypes)]
+#[derive(Clone, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into,
+         Hash, Serialize, Deserialize, DieselTypes)]
 pub struct WarehouseSlug(pub String);
 
 #[derive(Clone, Debug, PartialEq, Hash)]
@@ -88,8 +63,8 @@ pub enum WarehouseIdentifier {
     Slug(WarehouseSlug),
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct StockId(pub Uuid);
 impl StockId {
     pub fn new() -> Self {
@@ -97,8 +72,8 @@ impl StockId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct InvoiceId(pub Uuid);
 
 impl InvoiceId {
@@ -107,8 +82,8 @@ impl InvoiceId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct SagaId(pub Uuid);
 
 impl SagaId {
@@ -117,8 +92,8 @@ impl SagaId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct MerchantId(pub Uuid);
 
 impl MerchantId {
@@ -127,8 +102,8 @@ impl MerchantId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct OrderId(pub Uuid);
 
 impl OrderId {
@@ -137,8 +112,8 @@ impl OrderId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct OrderInfoId(pub Uuid);
 
 impl OrderInfoId {
@@ -147,8 +122,8 @@ impl OrderInfoId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
+         Into, Hash, Serialize, Deserialize, DieselTypes)]
 pub struct CallbackId(pub Uuid);
 
 impl CallbackId {
@@ -157,8 +132,8 @@ impl CallbackId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, From, FromStr, Into, Hash, Serialize,
-         Deserialize, DieselTypes)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into, Hash,
+         Serialize, Deserialize, DieselTypes)]
 pub struct CurrencyId(pub i32);
 
 impl fmt::Display for CurrencyId {
@@ -182,3 +157,9 @@ impl fmt::Display for CurrencyId {
          Deserialize, DieselTypes)]
 
 pub struct ProductPrice(pub f64);
+
+impl<'a> From<&'a ProductPrice> for f64 {
+    fn from(p: &ProductPrice) -> f64 {
+        p.0
+    }
+}

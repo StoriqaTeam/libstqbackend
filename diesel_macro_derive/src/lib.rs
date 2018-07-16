@@ -42,6 +42,8 @@ pub fn derive_diesel_types(input: proc_macro::TokenStream) -> proc_macro::TokenS
             use diesel::sql_types::*;
             use diesel::Queryable;
 
+            use super::#name;
+
             #diesel_impls
 
         }

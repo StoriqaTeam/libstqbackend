@@ -163,3 +163,13 @@ impl<'a> From<&'a ProductPrice> for f64 {
         p.0
     }
 }
+
+#[derive(Clone, Copy, Debug, Default, Display, From, FromStr, Into, PartialEq, Serialize,
+         Deserialize, DieselTypes)]
+pub struct ConversionId(pub Uuid);
+
+impl ConversionId {
+    pub fn new() -> Self {
+        ConversionId(Uuid::new_v4())
+    }
+}

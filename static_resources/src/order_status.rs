@@ -7,6 +7,10 @@ use std::str::FromStr;
 #[graphql(name = "OrderState", description = "Current order status")]
 pub enum OrderState {
     #[graphql(description = "State set on order creation.")]
+    #[serde(rename = "new")]
+    New,
+
+    #[graphql(description = "State set on order wallet creation.")]
     #[serde(rename = "payment_awaited")]
     PaymentAwaited,
 
@@ -48,6 +52,7 @@ impl FromStr for OrderState {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
+            "new" => OrderState::New,
             "payment_awaited" => OrderState::PaymentAwaited,
             "transaction_pending" => OrderState::TransactionPending,
             "paid" => OrderState::Paid,
@@ -72,6 +77,7 @@ impl Display for OrderState {
             f,
             "{}",
             match self {
+                New => "new",
                 PaymentAwaited => "payment_awaited",
                 TransactionPending => "transaction_pending",
                 Paid => "paid",
@@ -89,6 +95,7 @@ impl Display for OrderState {
 impl OrderState {
     pub fn as_vec() -> Vec<OrderState> {
         vec![
+            OrderState::New,
             OrderState::PaymentAwaited,
             OrderState::TransactionPending,
             OrderState::Paid,

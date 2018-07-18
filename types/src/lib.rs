@@ -10,7 +10,9 @@ extern crate stq_diesel_macro_derive;
 extern crate stq_static_resources;
 
 pub mod enums;
+pub mod newtypes;
 pub mod structs;
 
 pub use self::enums::*;
+pub use self::newtypes::*;
 pub use self::structs::*;

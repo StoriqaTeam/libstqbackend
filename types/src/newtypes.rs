@@ -78,12 +78,13 @@ impl fmt::Display for CurrencyId {
             f,
             "{}",
             match self.0 {
+                x if x == Currency::Rouble as i32 => Currency::Rouble.to_string(),
                 x if x == Currency::Euro as i32 => Currency::Euro.to_string(),
                 x if x == Currency::Dollar as i32 => Currency::Dollar.to_string(),
                 x if x == Currency::Bitcoin as i32 => Currency::Bitcoin.to_string(),
                 x if x == Currency::Etherium as i32 => Currency::Etherium.to_string(),
                 x if x == Currency::Stq as i32 => Currency::Stq.to_string(),
-                _ => return Err(fmt::Error)
+                _ => "unknown".to_string(),
             }
         )
     }

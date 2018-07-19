@@ -83,7 +83,7 @@ impl fmt::Display for CurrencyId {
                 x if x == Currency::Bitcoin as i32 => Currency::Bitcoin.to_string(),
                 x if x == Currency::Etherium as i32 => Currency::Etherium.to_string(),
                 x if x == Currency::Stq as i32 => Currency::Stq.to_string(),
-                _ => "".to_string(),
+                _ => return Err(fmt::Error)
             }
         )
     }

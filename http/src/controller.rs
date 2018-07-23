@@ -44,8 +44,8 @@ where
         debug!("Received request: {:?}", req);
 
         Box::new(
-            match req.method() {
-                &Options => {
+            match *req.method() {
+                Options => {
                     let req_headers = req.headers().clone();
                     let acah = req_headers.get::<AccessControlRequestHeaders>();
 
@@ -68,7 +68,7 @@ where
                     }.then({
                         |res| match res {
                             Ok(data) => future::ok(Self::response_with_json(data)),
-                            Err(err) => future::ok(Self::response_with_error(err)),
+                            Err(err) => future::ok(Self::response_with_error(&err)),
                         }
                     })
                         .inspect(|resp| debug!("Sending response: {:?}", resp)),
@@ -132,9 +132,9 @@ where
     }
 
     /// Responds with JSON error, logs response body
-    fn response_with_error(error: failure::Error) -> Response {
+    fn response_with_error(error: &failure::Error) -> Response {
         trace!("Trace: {}", error.backtrace());
-        let error_data = ErrorMessageWrapper::<E>::from(error).inner;
+        let error_data = ErrorMessageWrapper::<E>::from(&error).inner;
         error!("Description: \"{}\". Payload: {:?}", error_data.description, error_data.payload);
         let mes = serde_json::to_string(&error_data).unwrap();
         Self::response_with_body(mes).with_status(hyper::StatusCode::try_from(error_data.code).unwrap())

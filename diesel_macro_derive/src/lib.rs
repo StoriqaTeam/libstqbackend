@@ -53,7 +53,7 @@ pub fn derive_diesel_types(input: proc_macro::TokenStream) -> proc_macro::TokenS
     expanded.into()
 }
 
-fn match_types_names_to_diesel_types(type_name: String) -> Option<proc_macro2::TokenStream> {
+fn match_types_names_to_diesel_types(type_name: &str) -> Option<proc_macro2::TokenStream> {
     match type_name.to_lowercase() {
         ref x if x == "uuid" => Some(quote!{::diesel::sql_types::Uuid}),
         ref x if x == "i32" => Some(quote!{::diesel::sql_types::Integer}),
@@ -77,7 +77,7 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
                                 Type::Path(p) => p.path
                                     .segments
                                     .iter()
-                                    .filter_map(|segment| match_types_names_to_diesel_types(segment.ident.to_string()))
+                                    .filter_map(|segment| match_types_names_to_diesel_types(&segment.ident.to_string()))
                                     .nth(0)
                                     .unwrap(),
                                 _ => unimplemented!(),

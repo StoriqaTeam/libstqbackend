@@ -4,10 +4,10 @@ use stq_db::statement::*;
 use stq_types::*;
 use tokio_postgres::rows::Row;
 
-pub const ID_COLUMN: &'static str = "id";
-pub const USER_ID_COLUMN: &'static str = "user_id";
-pub const ROLE_NAME_COLUMN: &'static str = "name";
-pub const ROLE_DATA_COLUMN: &'static str = "data";
+pub const ID_COLUMN: &str = "id";
+pub const USER_ID_COLUMN: &str = "user_id";
+pub const ROLE_NAME_COLUMN: &str = "name";
+pub const ROLE_DATA_COLUMN: &str = "data";
 
 pub trait RoleModel: Sized + 'static {
     fn is_su(&self) -> bool;

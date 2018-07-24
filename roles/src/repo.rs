@@ -7,7 +7,7 @@ use stq_db::repo::*;
 use stq_db::statement::{UpdateBuilder, Updater};
 use stq_types::*;
 
-const TABLE: &'static str = "roles";
+const TABLE: &str = "roles";
 
 pub struct DummyRoleUpdater;
 
@@ -48,7 +48,7 @@ where
 {
     let mut res = false;
 
-    for user_role in caller_roles.into_iter() {
+    for user_role in caller_roles {
         // Superadmins can do anything.
         if user_role.role.is_su() {
             res = true;

@@ -23,16 +23,16 @@ pub trait DbRepoInsert<T: 'static, I: Inserter, E: From<MultipleOperationError> 
     fn insert_exactly_one(&self, conn: BoxedConnection<E>, inserter: I) -> ConnectionFuture<T, E> {
         Box::new(self.insert(conn, inserter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
-                return Err((
+                Err((
                     E::from(MultipleOperationError::ExtraData {
                         extra: data.len() as u32 - 1,
                     }),
                     conn,
-                ));
-            } else if data.len() == 0 {
-                return Err((E::from(MultipleOperationError::NoData), conn));
+                ))
+            } else if data.is_empty() {
+                Err((E::from(MultipleOperationError::NoData), conn))
             } else if data.len() == 1 {
-                return Ok((data.pop().unwrap(), conn));
+                Ok((data.pop().unwrap(), conn))
             } else {
                 unreachable!()
             }
@@ -56,16 +56,16 @@ pub trait DbRepoSelect<T: 'static, F: Filter, E: From<MultipleOperationError> + 
     fn select_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
         Box::new(self.select(conn, filter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
-                return Err((
+                Err((
                     E::from(MultipleOperationError::ExtraData {
                         extra: data.len() as u32 - 1,
                     }),
                     conn,
-                ));
-            } else if data.len() == 0 {
-                return Err((E::from(MultipleOperationError::NoData), conn));
+                ))
+            } else if data.is_empty() {
+                Err((E::from(MultipleOperationError::NoData), conn))
             } else if data.len() == 1 {
-                return Ok((data.pop().unwrap(), conn));
+                Ok((data.pop().unwrap(), conn))
             } else {
                 unreachable!()
             }
@@ -79,16 +79,16 @@ pub trait DbRepoUpdate<T: 'static, U: Updater, E: From<MultipleOperationError> +
     fn update_exactly_one(&self, conn: BoxedConnection<E>, updater: U) -> ConnectionFuture<T, E> {
         Box::new(self.update(conn, updater).and_then(|(mut data, conn)| {
             if data.len() > 1 {
-                return Err((
+                Err((
                     E::from(MultipleOperationError::ExtraData {
                         extra: data.len() as u32 - 1,
                     }),
                     conn,
-                ));
-            } else if data.len() == 0 {
-                return Err((E::from(MultipleOperationError::NoData), conn));
+                ))
+            } else if data.is_empty() {
+                Err((E::from(MultipleOperationError::NoData), conn))
             } else if data.len() == 1 {
-                return Ok((data.pop().unwrap(), conn));
+                Ok((data.pop().unwrap(), conn))
             } else {
                 unreachable!()
             }
@@ -102,16 +102,16 @@ pub trait DbRepoDelete<T: 'static, F: Filter, E: From<MultipleOperationError> + 
     fn delete_exactly_one(&self, conn: BoxedConnection<E>, filter: F) -> ConnectionFuture<T, E> {
         Box::new(self.delete(conn, filter).and_then(|(mut data, conn)| {
             if data.len() > 1 {
-                return Err((
+                Err((
                     E::from(MultipleOperationError::ExtraData {
                         extra: data.len() as u32 - 1,
                     }),
                     conn,
-                ));
-            } else if data.len() == 0 {
-                return Err((E::from(MultipleOperationError::NoData), conn));
+                ))
+            } else if data.is_empty() {
+                Err((E::from(MultipleOperationError::NoData), conn))
             } else if data.len() == 1 {
-                return Ok((data.pop().unwrap(), conn));
+                Ok((data.pop().unwrap(), conn))
             } else {
                 unreachable!()
             }
@@ -138,7 +138,7 @@ pub enum Action {
 }
 
 fn bulk_ensure_access<T>(
-    acl_engine: Rc<acl::AclEngine<(T, Action), RepoError>>,
+    acl_engine: &Rc<acl::AclEngine<(T, Action), RepoError>>,
     context: (Vec<T>, Action),
     conn: BoxedConnection<RepoError>,
 ) -> impl Future<Item = (Vec<T>, BoxedConnection<RepoError>), Error = (RepoError, BoxedConnection<RepoError>)>
@@ -273,7 +273,7 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
-                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Insert), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(&afterop_acl_engine, (items, Action::Insert), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running insert").into(), conn)),
         )
     }
@@ -302,7 +302,7 @@ where
                 .ensure_access(filter)
                 .then(move |res| match res {
                     Ok(filter) => {
-                        if let Some(limit) = limit.clone() {
+                        if let Some(limit) = limit {
                             if limit < 1 {
                                 return Box::new(future::err((format_err!("Limit cannot be less than 1"), conn)));
                             }
@@ -323,7 +323,7 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
-                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Select), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(&afterop_acl_engine, (items, Action::Select), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running select").into(), conn)),
         )
     }
@@ -361,7 +361,7 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
-                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Update), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(&afterop_acl_engine, (items, Action::Update), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running update").into(), conn)),
         )
     }
@@ -399,7 +399,7 @@ where
                         .map_err(move |(e, conn)| (e.context(err_msg).into(), conn))
                 })
                 .map(|(rows, conn)| (rows.into_iter().map(T::from).collect::<Vec<T>>(), conn))
-                .and_then(move |(items, conn)| bulk_ensure_access(afterop_acl_engine, (items, Action::Delete), conn))
+                .and_then(move |(items, conn)| bulk_ensure_access(&afterop_acl_engine, (items, Action::Delete), conn))
                 .map_err(|(e, conn)| (e.context("Failure while running delete").into(), conn)),
         )
     }

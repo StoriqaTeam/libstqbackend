@@ -21,7 +21,7 @@ pub enum SelectOperation {
 }
 
 impl SelectOperation {
-    fn to_sql(&self) -> &'static str {
+    fn to_sql(self) -> &'static str {
         use self::SelectOperation::*;
 
         match self {
@@ -31,7 +31,7 @@ impl SelectOperation {
 }
 
 /// Filtering operation
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FilteredOperation {
     Select { op: Option<SelectOperation>, limit: Option<i32> },
     Delete,
@@ -55,8 +55,8 @@ fn build_where_from_filters(filters: Filters, mut i: usize) -> (String, Vec<Box<
 
     let mut started = false;
 
-    for (col, filter) in filters.into_iter() {
-        for (mode, value) in filter.into_iter() {
+    for (col, filter) in filters {
+        for (mode, value) in filter {
             if started {
                 query.push_str(" AND ");
             }

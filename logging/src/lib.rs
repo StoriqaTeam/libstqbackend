@@ -34,14 +34,14 @@ impl Log for CombinedLogger {
 
     fn log(&self, record: &Record) {
         if (self.filter)(record) {
-            for logger in self.inner.iter() {
+            for logger in &self.inner {
                 logger.log(record);
             }
         }
     }
 
     fn flush(&self) {
-        for logger in self.inner.iter() {
+        for logger in &self.inner {
             logger.flush();
         }
     }

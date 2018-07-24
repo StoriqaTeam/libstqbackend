@@ -88,14 +88,12 @@ impl<T> RouteParser<T> {
     /// assert_eq!(route, Route::Users);
     /// ```
     pub fn test(&self, route: &str) -> Option<T> {
-        self.regex_and_converters
-            .iter()
-            .fold(None, |acc, regex_and_converter| {
-                if acc.is_some() {
-                    return acc;
-                }
-                RouteParser::<T>::get_matches(&regex_and_converter.0, route).and_then(|v| regex_and_converter.1(v))
-            })
+        for (pattern, test_func) in &self.regex_and_converters {
+            if let Some(v) = RouteParser::<T>::get_matches(&pattern, route) {
+                return test_func(v);
+            }
+        }
+        None
     }
 
     fn get_matches<'a>(regex: &Regex, string: &'a str) -> Option<Vec<&'a str>> {

@@ -27,7 +27,7 @@ impl<E> ErrorMessageWrapper<E>
 where
     E: Fail + Codeable + PayloadCarrier,
 {
-    pub fn from(e: Error) -> Self {
+    pub fn from(e: &Error) -> Self {
         let description = e.causes().fold(String::new(), |mut acc, real_err| {
             if !acc.is_empty() {
                 acc += " | ";

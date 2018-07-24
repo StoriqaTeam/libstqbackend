@@ -139,11 +139,13 @@ impl Client {
                         let message = serde_json::from_str::<ErrorMessage>(&body).ok();
                         let error = Error::Api(
                             status,
-                            message.or(Some(ErrorMessage {
-                                code: 422,
-                                description: body,
-                                payload: None,
-                            })),
+                            message.or_else(|| {
+                                Some(ErrorMessage {
+                                    code: 422,
+                                    description: body,
+                                    payload: None,
+                                })
+                            }),
                         );
                         future::err(error)
                     })),

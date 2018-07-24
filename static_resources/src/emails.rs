@@ -53,3 +53,67 @@ impl Email for OrderUpdateStateForStore {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct EmailVerificationForUser {
+    pub user_email: String,
+    pub verify_email_path: String,
+    pub token: String,
+}
+
+impl Email for EmailVerificationForUser {
+    fn into_send_mail(self) -> SendMail {
+        SendMail {
+            to: self.user_email,
+            subject: "Email verification".to_string(),
+            text: format!("{}/{}", self.verify_email_path, self.token),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PasswordResetForUser {
+    pub user_email: String,
+    pub reset_password_path: String,
+    pub token: String,
+}
+
+impl Email for PasswordResetForUser {
+    fn into_send_mail(self) -> SendMail {
+        SendMail {
+            to: self.user_email,
+            subject: "Password reset".to_string(),
+            text: format!("{}/{}", self.reset_password_path, self.token),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ApplyPasswordResetForUser {
+    pub user_email: String,
+}
+
+impl Email for ApplyPasswordResetForUser {
+    fn into_send_mail(self) -> SendMail {
+        SendMail {
+            to: self.user_email,
+            subject: "Password reset success".to_string(),
+            text: "Password for linked account has been successfully reset.".to_string(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ApplyEmailVerificationForUser {
+    pub user_email: String,
+}
+
+impl Email for ApplyEmailVerificationForUser {
+    fn into_send_mail(self) -> SendMail {
+        SendMail {
+            to: self.user_email,
+            subject: "Email verification".to_string(),
+            text: "Email for linked account has been verified.".to_string(),
+        }
+    }
+}

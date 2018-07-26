@@ -49,7 +49,7 @@ where
 }
 
 /// Reads body of request and response in Future format
-pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error>> {
+pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error> + Send> {
     Box::new(body.fold(Vec::new(), |mut acc, chunk| {
         acc.extend_from_slice(&*chunk);
         future::ok::<_, hyper::Error>(acc)

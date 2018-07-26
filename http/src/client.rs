@@ -17,6 +17,7 @@ use tokio_core;
 use tokio_core::reactor::Handle;
 
 use errors::ErrorMessage;
+use request_util::read_body;
 
 pub type ClientResult = Result<String, Error>;
 pub type HyperClient = hyper::Client<HttpsConnector<hyper::client::HttpConnector>>;
@@ -131,7 +132,7 @@ impl Client {
         let work_with_timeout = work.map_err(Error::Network)
             .and_then(move |res| {
                 let status = res.status();
-                let body_future: Box<Future<Item = String, Error = Error>> = Box::new(Self::read_body(res.body()).map_err(Error::Network));
+                let body_future: Box<Future<Item = String, Error = Error>> = Box::new(read_body(res.body()).map_err(Error::Network));
                 match status.as_u16() {
                     200...299 => body_future,
 
@@ -156,16 +157,6 @@ impl Client {
             .map_err(|_| ());
 
         Box::new(work_with_timeout)
-    }
-
-    fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error> + Send> {
-        Box::new(body.fold(Vec::new(), |mut acc, chunk| {
-            acc.extend_from_slice(&*chunk);
-            future::ok::<_, hyper::Error>(acc)
-        }).and_then(|bytes| match String::from_utf8(bytes) {
-            Ok(data) => future::ok(data),
-            Err(err) => future::err(hyper::Error::Utf8(err.utf8_error())),
-        }))
     }
 }
 
@@ -206,7 +197,10 @@ impl ClientHandle {
     {
         Box::new(
             self.send_request_with_retries(method, url, body, headers, None, self.max_retries)
-                .and_then(|response| serde_json::from_str::<T>(&response).map_err(|err| Error::Parse(format!("{}", err)))),
+                .and_then(|response| {
+                    serde_json::from_str::<T>(&response)
+                        .map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
+                }),
         )
     }
 

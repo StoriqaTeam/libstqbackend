@@ -5,7 +5,6 @@ use futures::future;
 use stq_acl::*;
 use stq_db::repo::*;
 use stq_db::statement::{UpdateBuilder, Updater};
-use stq_types::*;
 
 const TABLE: &str = "roles";
 
@@ -37,54 +36,41 @@ where
     RolesRepoImpl::new(TABLE)
 }
 
-fn check_acl<T>(
-    caller_id: UserId,
-    caller_roles: Vec<RoleEntry<T>>,
-    entry: RoleEntry<T>,
-    action: Action,
-) -> Verdict<(RoleEntry<T>, Action), failure::Error>
+fn check_acl<T>(login: RepoLogin<T>, entry: RoleEntry<T>, action: Action) -> Verdict<(RoleEntry<T>, Action), failure::Error>
 where
     T: RoleModel,
 {
-    let mut res = false;
+    use self::RepoLogin::*;
 
-    for user_role in caller_roles {
-        // Superadmins can do anything.
-        if user_role.role.is_su() {
-            res = true;
-            break;
-        }
-    }
+    Box::new(future::ok((
+        || -> bool {
+            match login {
+                Anonymous => false,
+                User { caller_id, caller_roles } => {
+                    for user_role in caller_roles {
+                        // Superadmins can do anything.
+                        if user_role.role.is_su() {
+                            return true;
+                        }
+                    }
 
-    // Others can only view their roles.
-    if action == Action::Select {
-        res = caller_id == entry.user_id;
-    }
+                    // Others can only view their roles.
+                    if action == Action::Select && caller_id == entry.user_id {
+                        return true;
+                    }
 
-    Box::new(future::ok((res, (entry, action))))
-}
-
-pub enum RepoLogin<T> {
-    Anonymous,
-    User {
-        caller_id: UserId,
-        caller_roles: Vec<RoleEntry<T>>,
-    },
+                    false
+                }
+            }
+        }(),
+        (entry, action),
+    )))
 }
 
 /// Creates roles repo. No access for anonymous users, sorry.
 pub fn make_repo<T>(login: RepoLogin<T>) -> RolesRepoImpl<T>
 where
-    T: RoleModel + Clone,
+    T: RoleModel,
 {
-    use self::RepoLogin::*;
-
-    let repo = make_su_repo();
-
-    match login {
-        Anonymous => repo.with_afterop_acl_engine(ForbiddenACL),
-        User { caller_id, caller_roles } => {
-            repo.with_afterop_acl_engine({ move |(entry, action)| check_acl(caller_id, caller_roles.clone(), entry, action) })
-        }
-    }
+    make_su_repo().with_afterop_acl_engine({ move |(entry, action)| check_acl(login.clone(), entry, action) })
 }

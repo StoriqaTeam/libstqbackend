@@ -1,5 +1,8 @@
 use failure;
+use futures::prelude::*;
 use serde_json::Value;
+use std::fmt::Debug;
+use std::rc::Rc;
 use stq_db::statement::*;
 use stq_types::*;
 use tokio_postgres::rows::Row;
@@ -9,7 +12,7 @@ pub const USER_ID_COLUMN: &str = "user_id";
 pub const ROLE_NAME_COLUMN: &str = "name";
 pub const ROLE_DATA_COLUMN: &str = "data";
 
-pub trait RoleModel: Sized + 'static {
+pub trait RoleModel: Clone + Debug + 'static {
     fn is_su(&self) -> bool;
     fn from_db(variant: &str, data: Value) -> Result<Self, failure::Error>;
     fn into_db(self) -> (String, Value);
@@ -113,3 +116,16 @@ impl<T> From<RoleSearchTerms<T>> for RoleFilter<T> {
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub enum RepoLogin<T> {
+    Anonymous,
+    User {
+        caller_id: UserId,
+        caller_roles: Vec<RoleEntry<T>>,
+    },
+}
+
+pub type ServiceFuture<T> = Box<Future<Item = T, Error = failure::Error>>;
+pub type RepoLoginFuture<T> = ServiceFuture<RepoLogin<T>>;
+pub type RepoLoginSource<T> = Rc<Fn() -> RepoLoginFuture<T>>;

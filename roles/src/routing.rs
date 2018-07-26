@@ -17,6 +17,16 @@ pub enum Route {
     RolesByUserId(UserId),
 }
 
+impl Route {
+    pub fn route(&self) -> String {
+        match self {
+            Route::Roles => "roles".into(),
+            Route::RoleById(entry_id) => format!("roles/by-id/{}", entry_id),
+            Route::RolesByUserId(user_id) => format!("roles/by-user-id/{}", user_id),
+        }
+    }
+}
+
 pub fn add_routes<R>(mut route_parser: RouteParser<R>) -> RouteParser<R>
 where
     R: From<Route>,

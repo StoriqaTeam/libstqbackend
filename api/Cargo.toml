@@ -1,0 +1,14 @@
+[package]
+name = "stq_api"
+version = "0.1.0"
+
+[dependencies]
+failure = "0.1"
+futures = "0.1"
+hyper = "0.12"
+reqwest = { git = "https://github.com/seanmonstar/reqwest", features = ["unstable"] }
+serde = "*"
+serde_json = "*"
+stq_roles = { path = "../roles" }
+stq_router = { path = "../router" }
+stq_types = { path = "../types" }

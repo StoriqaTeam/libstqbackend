@@ -59,6 +59,7 @@ uuid_newtype!(OrderInfoId);
 uuid_newtype!(CallbackId);
 uuid_newtype!(ConversionId);
 uuid_newtype!(WarehouseId);
+uuid_newtype!(SessionId);
 
 f64_newtype!(ProductPrice);
 
@@ -66,6 +67,12 @@ f64_newtype!(ProductPrice);
 pub enum WarehouseIdentifier {
     Id(WarehouseId),
     Slug(WarehouseSlug),
+}
+
+#[derive(Clone, Debug, PartialEq, Hash)]
+pub enum CartCustomer {
+    User(UserId),
+    Anonymous(SessionId),
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into, Hash,

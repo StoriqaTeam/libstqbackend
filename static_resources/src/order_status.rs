@@ -18,6 +18,10 @@ pub enum OrderState {
     #[serde(rename = "transaction_pending")]
     TransactionPending,
 
+    #[graphql(description = "Set after price timeout has passed. Amount recalculation needed.")]
+    #[serde(rename = "amount_expired")]
+    AmountExpired,
+
     #[graphql(description = "Set after payment is accepted by blockchain by request of billing")]
     #[serde(rename = "paid")]
     Paid,
@@ -52,16 +56,17 @@ impl FromStr for OrderState {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "new" => OrderState::New,
-            "payment_awaited" => OrderState::PaymentAwaited,
-            "transaction_pending" => OrderState::TransactionPending,
-            "paid" => OrderState::Paid,
-            "in_processing" => OrderState::InProcessing,
-            "cancelled" => OrderState::Cancelled,
-            "sent" => OrderState::Sent,
-            "delivered" => OrderState::Delivered,
-            "received" => OrderState::Received,
-            "complete" => OrderState::Complete,
+            "New" => OrderState::New,
+            "Payment Awaited" => OrderState::PaymentAwaited,
+            "Transaction pending" => OrderState::TransactionPending,
+            "Amount expired" => OrderState::AmountExpired,
+            "Paid" => OrderState::Paid,
+            "In processing" => OrderState::InProcessing,
+            "Cancelled" => OrderState::Cancelled,
+            "Sent" => OrderState::Sent,
+            "Delivered" => OrderState::Delivered,
+            "Received" => OrderState::Received,
+            "Complete" => OrderState::Complete,
             other => {
                 return Err(format!("Unrecognized enum variant: {}", other).to_string().into());
             }
@@ -77,16 +82,17 @@ impl Display for OrderState {
             f,
             "{}",
             match self {
-                New => "new",
-                PaymentAwaited => "payment_awaited",
-                TransactionPending => "transaction_pending",
-                Paid => "paid",
-                InProcessing => "in_processing",
-                Cancelled => "cancelled",
-                Sent => "sent",
-                Delivered => "delivered",
-                Received => "received",
-                Complete => "complete",
+                New => "New",
+                PaymentAwaited => "Payment Awaited",
+                TransactionPending => "Transaction pending",
+                AmountExpired => "Amount expired",
+                Paid => "Paid",
+                InProcessing => "In processing",
+                Cancelled => "Cancelled",
+                Sent => "Sent",
+                Delivered => "Delivered",
+                Received => "Received",
+                Complete => "Complete",
             }
         )
     }
@@ -98,6 +104,7 @@ impl OrderState {
             OrderState::New,
             OrderState::PaymentAwaited,
             OrderState::TransactionPending,
+            OrderState::AmountExpired,
             OrderState::Paid,
             OrderState::InProcessing,
             OrderState::Cancelled,

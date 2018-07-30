@@ -1,3 +1,6 @@
+use postgres;
+use postgres::types::{FromSql, IsNull, ToSql, Type};
+use postgres_protocol::types::{text_from_sql, text_to_sql};
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -95,6 +98,67 @@ impl Display for OrderState {
                 Complete => "Complete",
             }
         )
+    }
+}
+
+impl ToSql for OrderState {
+    to_sql_checked!();
+
+    fn to_sql(&self, _ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<Error + Sync + Send>> {
+        use self::OrderState::*;
+
+        text_to_sql(
+            match self {
+                New => "new",
+                PaymentAwaited => "payment_awaited",
+                TransactionPending => "transaction_pending",
+                AmountExpired => "amount_expired",
+                Paid => "paid",
+                InProcessing => "in_processing",
+                Cancelled => "cancelled",
+                Sent => "sent",
+                Delivered => "delivered",
+                Received => "received",
+                Complete => "complete",
+            },
+            out,
+        );
+        Ok(IsNull::No)
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        <&str as ToSql>::accepts(ty)
+    }
+}
+
+impl<'a> FromSql<'a> for OrderState {
+    fn from_sql(_: &Type, raw: &'a [u8]) -> Result<Self, Box<Error + Sync + Send>> {
+        use self::OrderState::*;
+
+        text_from_sql(raw).and_then(|buf| {
+            Ok(match buf {
+                "new" => New,
+                "payment_awaited" => PaymentAwaited,
+                "transaction_pending" => TransactionPending,
+                "amount_expired" => AmountExpired,
+                "paid" => Paid,
+                "in_processing" => InProcessing,
+                "cancelled" => Cancelled,
+                "sent" => Sent,
+                "delivered" => Delivered,
+                "received" => Received,
+                "complete" => Complete,
+                other => {
+                    return Err(Box::new(postgres::error::conversion(
+                        format!("Unknown OrderState variant: {}", other).into(),
+                    )));
+                }
+            })
+        })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        <&str as FromSql>::accepts(ty)
     }
 }
 

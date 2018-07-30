@@ -7,6 +7,9 @@ extern crate diesel;
 extern crate isolang;
 #[macro_use]
 extern crate stq_diesel_macro_derive;
+#[macro_use]
+extern crate postgres;
+extern crate postgres_protocol;
 
 pub mod attribute_type;
 pub mod currency;

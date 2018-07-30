@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(GraphQLEnum, Deserialize, Serialize, Debug, Clone, PartialEq, DieselTypes)]
+#[derive(GraphQLEnum, Deserialize, Serialize, Debug, Clone, Copy, PartialEq, DieselTypes)]
 #[graphql(name = "OrderState", description = "Current order status")]
 pub enum OrderState {
     #[graphql(description = "State set on order creation.")]

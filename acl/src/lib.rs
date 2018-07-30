@@ -37,14 +37,44 @@ where
     }
 }
 
-impl<Context, Error, T> AclEngine<Context, Error> for T
+pub struct AsyncACLFn<F>(pub F);
+pub struct SyncACLFn<F>(pub F);
+pub struct InfallibleSyncACLFn<F>(pub F);
+
+impl<F, Context, Error> AclEngine<Context, Error> for AsyncACLFn<F>
 where
+    F: Fn(Context) -> Verdict<Context, Error>,
     Context: 'static,
     Error: From<UnauthorizedError> + 'static,
-    T: Fn(Context) -> Verdict<Context, Error>,
 {
     fn allows(&self, ctx: Context) -> Verdict<Context, Error> {
-        (self)(ctx)
+        (self.0)(ctx)
+    }
+}
+
+impl<F, Context, Error> AclEngine<Context, Error> for SyncACLFn<F>
+where
+    F: Fn(&mut Context) -> Result<bool, Error>,
+    Context: 'static,
+    Error: From<UnauthorizedError> + 'static,
+{
+    fn allows(&self, mut ctx: Context) -> Verdict<Context, Error> {
+        Box::new(future::result(match (self.0)(&mut ctx) {
+            Ok(allowed) => Ok((allowed, ctx)),
+            Err(e) => Err((e, ctx)),
+        }))
+    }
+}
+
+impl<F, Context, Error> AclEngine<Context, Error> for InfallibleSyncACLFn<F>
+where
+    F: Fn(&mut Context) -> bool,
+    Context: 'static,
+    Error: From<UnauthorizedError> + 'static,
+{
+    fn allows(&self, mut ctx: Context) -> Verdict<Context, Error> {
+        let allowed = (self.0)(&mut ctx);
+        Box::new(future::ok((allowed, ctx)))
     }
 }
 

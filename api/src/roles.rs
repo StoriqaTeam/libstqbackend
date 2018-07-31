@@ -1,5 +1,6 @@
 use rpc_client::RpcClientImpl;
-use util::serialize_payload;
+use types::*;
+use util::{http_req, serialize_payload};
 
 use failure;
 use futures::future;
@@ -11,57 +12,57 @@ use stq_roles::models::*;
 use stq_roles::routing::*;
 use stq_types::UserId;
 
-pub type ClientFuture<T> = Box<Future<Item = T, Error = failure::Error> + Send>;
+impl RouteBuilder for Route {
+    fn route(&self) -> String {
+        match self {
+            Route::Roles => "roles".into(),
+            Route::RoleById(entry_id) => format!("roles/by-id/{}", entry_id),
+            Route::RolesByUserId(user_id) => format!("roles/by-user-id/{}", user_id),
+        }
+    }
+}
 
 pub trait RolesClient<T>
 where
     T: RoleModel + Clone + Debug + Serialize + DeserializeOwned + Send,
 {
-    fn get_roles_for_user(&self, user_id: UserId) -> ClientFuture<T>;
-    fn create_role(&self, item: RoleEntry<T>) -> ClientFuture<RoleEntry<T>>;
-    fn remove_role(&self, terms: RoleSearchTerms<T>) -> ClientFuture<Option<RoleEntry<T>>>;
+    fn get_roles_for_user(&self, user_id: UserId) -> ApiFuture<T>;
+    fn create_role(&self, item: RoleEntry<T>) -> ApiFuture<RoleEntry<T>>;
+    fn remove_role(&self, terms: RoleSearchTerms<T>) -> ApiFuture<Option<RoleEntry<T>>>;
 }
 
 impl<T> RolesClient<T> for RpcClientImpl
 where
     T: RoleModel + Clone + Debug + Serialize + DeserializeOwned + Send,
 {
-    fn get_roles_for_user(&self, user_id: UserId) -> ClientFuture<T> {
-        Box::new(
+    fn get_roles_for_user(&self, user_id: UserId) -> ApiFuture<T> {
+        http_req(
             self.http_client
-                .get(&Route::RolesByUserId(user_id).route())
-                .send()
-                .and_then(|mut rsp| rsp.json())
-                .map_err(failure::Error::from),
+                .get(&self.build_route(&Route::RolesByUserId(user_id))),
         )
     }
 
-    fn create_role(&self, item: RoleEntry<T>) -> ClientFuture<RoleEntry<T>> {
+    fn create_role(&self, item: RoleEntry<T>) -> ApiFuture<RoleEntry<T>> {
         let http_client = self.http_client.clone();
+        let route = self.build_route(&Route::Roles);
         Box::new(
             serialize_payload(item)
-                .and_then(move |body| {
-                    http_client
-                        .post(&Route::Roles.route())
-                        .body(body)
-                        .send()
-                        .map_err(failure::Error::from)
-                })
-                .and_then(|mut rsp| rsp.json().map_err(failure::Error::from)),
+                .and_then(move |body| http_req(http_client.post(&route).body(body))),
         )
     }
 
-    fn remove_role(&self, terms: RoleSearchTerms<T>) -> ClientFuture<Option<RoleEntry<T>>> {
+    fn remove_role(&self, terms: RoleSearchTerms<T>) -> ApiFuture<Option<RoleEntry<T>>> {
         let http_client = self.http_client.clone();
         Box::new({
             let fut = match terms {
-                RoleSearchTerms::Id(id) => {
-                    Box::new(future::ok(http_client.delete(&Route::RoleById(id).route())))
-                        as Box<Future<Item = RequestBuilder, Error = failure::Error> + Send>
-                }
+                RoleSearchTerms::Id(id) => Box::new(future::ok(
+                    http_client.delete(&self.build_route(&Route::RoleById(id))),
+                ))
+                    as Box<Future<Item = RequestBuilder, Error = failure::Error> + Send>,
                 RoleSearchTerms::Meta((user_id, entry)) => {
+                    let route = self.build_route(&Route::RolesByUserId(user_id));
                     Box::new(serialize_payload(entry).map(move |body| {
-                        let mut req = http_client.delete(&Route::RolesByUserId(user_id).route());
+                        let mut req = http_client.delete(&route);
                         req.body(body);
                         req
                     }))

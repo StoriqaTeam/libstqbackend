@@ -8,6 +8,7 @@ futures = "0.1"
 hyper = "0.12"
 reqwest = { git = "https://github.com/seanmonstar/reqwest", features = ["unstable"] }
 serde = "*"
+serde_derive = "*"
 serde_json = "*"
 stq_roles = { path = "../roles" }
 stq_router = { path = "../router" }

@@ -1,3 +1,5 @@
+use types::*;
+
 use hyper::{header::{HeaderName, HeaderValue},
             HeaderMap};
 use reqwest::unstable::async::{Client as HttpClient, ClientBuilder as HttpClientBuilder};
@@ -11,7 +13,7 @@ pub struct RpcClientImpl {
 }
 
 impl RpcClientImpl {
-    pub fn new<S>(base_url: S, caller_id: UserId) -> Self
+    pub fn new<S>(base_url: S, caller_id: Option<UserId>) -> Self
     where
         S: ToString,
     {
@@ -20,15 +22,22 @@ impl RpcClientImpl {
             http_client: Arc::new(
                 HttpClientBuilder::new()
                     .default_headers(
-                        vec![(
-                            HeaderName::from_static("Authorization"),
-                            HeaderValue::from_str(&caller_id.to_string()).unwrap(),
-                        )].into_iter()
+                        match caller_id {
+                            Some(v) => vec![(
+                                HeaderName::from_static("authorization"),
+                                HeaderValue::from_str(&v.to_string()).unwrap(),
+                            )],
+                            None => vec![],
+                        }.into_iter()
                             .collect::<HeaderMap>(),
                     )
                     .build()
                     .unwrap(),
             ),
         }
+    }
+
+    pub fn build_route(&self, route_builder: &RouteBuilder) -> String {
+        route_builder.build_route(Some(&self.base_url))
     }
 }

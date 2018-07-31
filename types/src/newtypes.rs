@@ -69,7 +69,14 @@ pub enum WarehouseIdentifier {
     Slug(WarehouseSlug),
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+/// Anything that can uniquely identify an Order
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum OrderIdentifier {
+    Id(OrderId),
+    Slug(OrderSlug),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Hash)]
 pub enum CartCustomer {
     User(UserId),
     Anonymous(SessionId),

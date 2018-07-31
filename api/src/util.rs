@@ -24,3 +24,20 @@ where
             .and_then(|mut rsp| rsp.json().map_err(failure::Error::from)),
     )
 }
+
+pub trait RouteBuilder {
+    fn route(&self) -> String;
+
+    fn build_route(&self, base: Option<&AsRef<str>>) -> String {
+        {
+            format!(
+                "{}{}",
+                match base {
+                    Some(url) => format!("{}/", url.as_ref()),
+                    None => "".to_string(),
+                },
+                self.route()
+            )
+        }
+    }
+}

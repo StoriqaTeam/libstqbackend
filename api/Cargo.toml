@@ -5,6 +5,7 @@ version = "0.1.0"
 [dependencies]
 failure = "0.1"
 futures = "0.1"
+geo = "*"
 hyper = "0.12"
 reqwest = { git = "https://github.com/seanmonstar/reqwest", features = ["unstable"] }
 serde = "*"

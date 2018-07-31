@@ -3,19 +3,13 @@ use futures::prelude::*;
 
 pub type ApiFuture<T> = Box<Future<Item = T, Error = failure::Error> + Send>;
 
-pub trait RouteBuilder {
-    fn route(&self) -> String;
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ValueContainer<T> {
+    pub value: T,
+}
 
-    fn build_route(&self, base: Option<&AsRef<str>>) -> String {
-        {
-            format!(
-                "{}{}",
-                match base {
-                    Some(url) => format!("{}/", url.as_ref()),
-                    None => "".to_string(),
-                },
-                self.route()
-            )
-        }
+impl<T> From<T> for ValueContainer<T> {
+    fn from(value: T) -> Self {
+        Self { value }
     }
 }

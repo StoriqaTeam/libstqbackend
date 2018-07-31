@@ -168,7 +168,7 @@ pub struct CartMergePayload {
 }
 
 /// Service that provides operations for interacting with user carts
-pub trait CartService {
+pub trait CartClient {
     /// Get user's cart contents
     fn get_cart(&self, customer: CartCustomer) -> ApiFuture<Cart>;
     /// Increase item's quantity by 1
@@ -209,7 +209,7 @@ pub trait CartService {
     fn merge(&self, from: SessionId, to: UserId) -> ApiFuture<Cart>;
 }
 
-impl CartService for RpcClientImpl {
+impl CartClient for RpcClientImpl {
     fn get_cart(&self, customer: CartCustomer) -> ApiFuture<Cart> {
         http_req(
             self.http_client

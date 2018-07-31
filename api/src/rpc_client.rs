@@ -1,4 +1,4 @@
-use types::*;
+use util::*;
 
 use hyper::{header::{HeaderName, HeaderValue},
             HeaderMap};
@@ -13,7 +13,7 @@ pub struct RpcClientImpl {
 }
 
 impl RpcClientImpl {
-    pub fn new<S>(base_url: S, caller_id: Option<UserId>) -> Self
+    pub fn new<S>(base_url: &S, caller_id: Option<UserId>) -> Self
     where
         S: ToString,
     {

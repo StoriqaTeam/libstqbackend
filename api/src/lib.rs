@@ -1,5 +1,6 @@
 extern crate failure;
 extern crate futures;
+extern crate geo;
 extern crate hyper;
 extern crate reqwest;
 extern crate serde;
@@ -14,3 +15,4 @@ pub mod roles;
 pub mod rpc_client;
 pub mod types;
 pub mod util;
+pub mod warehouses;

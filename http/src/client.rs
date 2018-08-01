@@ -198,8 +198,11 @@ impl ClientHandle {
         Box::new(
             self.send_request_with_retries(method, url, body, headers, None, self.max_retries)
                 .and_then(|response| {
-                    serde_json::from_str::<T>(&response)
-                        .map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
+                    if response.is_empty() {
+                        serde_json::from_value(serde_json::Value::Null)
+                    } else {
+                        serde_json::from_str::<T>(&response)
+                    }.map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
                 }),
         )
     }

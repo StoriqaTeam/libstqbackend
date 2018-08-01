@@ -14,6 +14,10 @@ pub struct EmailUser {
     pub last_name: String,
 }
 
+pub trait Email {
+    fn into_send_mail(self) -> SimpleMail;
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OrderUpdateStateForUser {
     pub user: EmailUser,
@@ -22,17 +26,13 @@ pub struct OrderUpdateStateForUser {
     pub cluster_url: String,
 }
 
-pub trait Email {
-    fn into_send_mail(self) -> SimpleMail;
-}
-
 impl Email for OrderUpdateStateForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to : self.user.email,
-            subject : format!("Your order {} has changed.", self.order_slug),
+            subject : format!("The order {} status", self.order_slug),
             text : format!(
-                "Orders' {} state is '{}' now. You can watch current info about your order on <a href=\"{}/profile/orders/{}\">this page</a>.",
+                "Orders' {} state is '{}' now. You can view current info about your order on <a href=\"{}/profile/orders/{}\">this page</a>.",
                 self.order_slug, self.order_state, self.cluster_url, self.order_slug
             ),
         }
@@ -52,10 +52,52 @@ impl Email for OrderUpdateStateForStore {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.store_email,
-            subject: format!("Changed orders' {} state.", self.order_slug),
+            subject: format!("The order {} status", self.order_slug),
             text: format!(
-                "Orders' {} state is '{}' now. You can watch current order info on <a href=\"{}/manage/store/{}/orders/{}\">this page</a>.",
+                "Orders' {} state is '{}' now. You can view current order info on <a href=\"{}/manage/store/{}/orders/{}\">this page</a>.",
                 self.order_slug, self.order_state, self.cluster_url, self.store_id, self.order_slug
+            ),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OrderCreateForUser {
+    pub user: EmailUser,
+    pub order_slug: String,
+    pub order_state: OrderState,
+    pub cluster_url: String,
+}
+
+impl Email for OrderCreateForUser {
+    fn into_send_mail(self) -> SimpleMail {
+        SimpleMail {
+            to: self.user.email,
+            subject: format!("New order {}.", self.order_slug),
+            text: format!(
+                "Order {} was created. You can view current info about your order on <a href=\"{}/profile/orders/{}\">this page</a>.",
+                self.order_slug, self.cluster_url, self.order_slug
+            ),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct OrderCreateForStore {
+    pub store_email: String,
+    pub order_slug: String,
+    pub cluster_url: String,
+    pub store_id: String,
+}
+
+impl Email for OrderCreateForStore {
+    fn into_send_mail(self) -> SimpleMail {
+        SimpleMail {
+            to: self.store_email,
+            subject: format!("New order {}.", self.order_slug),
+            text: format!(
+                "Order {} was created. You can view current order info on <a href=\"{}/manage/store/{}/orders/{}\">this page</a>.",
+                self.order_slug, self.cluster_url, self.store_id, self.order_slug
             ),
         }
     }
@@ -72,7 +114,7 @@ impl Email for EmailVerificationForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: "Email verification".to_string(),
+            subject: "Verify your account on Storiqa".to_string(),
             text: format!("{}/{}", self.verify_email_path, self.token),
         }
     }
@@ -104,7 +146,7 @@ impl Email for ApplyPasswordResetForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: "Password reset success".to_string(),
+            subject: "Successful password reset".to_string(),
             text: "Password for linked account has been successfully reset.".to_string(),
         }
     }
@@ -119,7 +161,7 @@ impl Email for ApplyEmailVerificationForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: "Email verification".to_string(),
+            subject: "Successful registration".to_string(),
             text: "Email for linked account has been verified.".to_string(),
         }
     }

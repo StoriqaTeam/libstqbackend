@@ -65,7 +65,6 @@ impl Email for OrderUpdateStateForStore {
 pub struct OrderCreateForUser {
     pub user: EmailUser,
     pub order_slug: String,
-    pub order_state: OrderState,
     pub cluster_url: String,
 }
 

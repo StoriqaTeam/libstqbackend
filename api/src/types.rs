@@ -1,5 +1,9 @@
 use failure;
 use futures::prelude::*;
+use reqwest::unstable::async::Body;
+use serde::Serialize;
+use serde_json;
+use std::convert::Into;
 
 pub type ApiFuture<T> = Box<Future<Item = T, Error = failure::Error> + Send>;
 
@@ -11,5 +15,16 @@ pub struct ValueContainer<T> {
 impl<T> From<T> for ValueContainer<T> {
     fn from(value: T) -> Self {
         Self { value }
+    }
+}
+
+pub struct JsonPayload<T>(pub T);
+
+impl<T> Into<Body> for JsonPayload<T>
+where
+    T: Serialize,
+{
+    fn into(self) -> Body {
+        serde_json::to_string(&self.0).unwrap().into()
     }
 }

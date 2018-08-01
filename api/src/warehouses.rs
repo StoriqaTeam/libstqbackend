@@ -1,8 +1,80 @@
-use std::collections::HashMap;
-use stq_types::*;
+use rpc_client::*;
 use types::*;
+use util::*;
 
 use geo::Point as GeoPoint;
+use std::collections::HashMap;
+use stq_roles;
+use stq_types::*;
+
+#[derive(Clone, Debug)]
+pub enum Route {
+    Warehouses,
+    WarehousesByStore {
+        store_id: StoreId,
+    },
+    Warehouse {
+        warehouse_id: WarehouseIdentifier,
+    },
+    StocksInWarehouse {
+        warehouse_id: WarehouseIdentifier,
+    },
+    StockInWarehouse {
+        warehouse_id: WarehouseIdentifier,
+        product_id: ProductId,
+    },
+    StocksByProductId {
+        product_id: ProductId,
+    },
+    StockById {
+        stock_id: StockId,
+    },
+    Roles(stq_roles::routing::Route),
+}
+
+impl From<stq_roles::routing::Route> for Route {
+    fn from(v: stq_roles::routing::Route) -> Self {
+        Route::Roles(v)
+    }
+}
+
+fn warehouse_identifier_route(id: &WarehouseIdentifier) -> String {
+    use self::WarehouseIdentifier::*;
+
+    match id {
+        Id(id) => format!("by-id/{}", id),
+        Slug(slug) => format!("by-slug/{}", slug),
+    }
+}
+
+impl RouteBuilder for Route {
+    fn route(&self) -> String {
+        use self::Route::*;
+
+        match self {
+            Warehouses => "warehouses".to_string(),
+            WarehousesByStore { store_id } => format!("warehouses/by-store/{}", store_id),
+            Warehouse { warehouse_id } => {
+                format!("warehouses/{}", warehouse_identifier_route(warehouse_id))
+            }
+            StocksInWarehouse { warehouse_id } => format!(
+                "warehouses/{}/products",
+                warehouse_identifier_route(warehouse_id)
+            ),
+            StockInWarehouse {
+                warehouse_id,
+                product_id,
+            } => format!(
+                "warehouses/{}/products/{}",
+                warehouse_identifier_route(warehouse_id),
+                product_id
+            ),
+            StocksByProductId { product_id } => format!("stocks/by-product-id/{}", product_id),
+            StockById { stock_id } => format!("stocks/by-id/{}", stock_id),
+            Roles(route) => route.route(),
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Warehouse {
@@ -144,6 +216,11 @@ impl From<Stock> for (StockId, WarehouseId, ProductId, StockMeta) {
 
 pub type StockMap = HashMap<ProductId, StockMeta>;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StockSetPayload {
+    pub quantity: Quantity,
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct WarehouseUpdateData {
     pub slug: Option<ValueContainer<WarehouseSlug>>,
@@ -175,19 +252,114 @@ pub trait WarehouseClient {
 
     fn set_product_in_warehouse(
         &self,
-        warehouse_id: WarehouseId,
+        warehouse_id: WarehouseIdentifier,
         product_id: ProductId,
         quantity: Quantity,
     ) -> ApiFuture<Stock>;
     fn get_product_in_warehouse(
         &self,
-        warehouse_id: WarehouseId,
+        warehouse_id: WarehouseIdentifier,
         product_id: ProductId,
     ) -> ApiFuture<Option<Stock>>;
-    fn list_products_in_warehouse(&self, warehouse_id: WarehouseId) -> ApiFuture<StockMap>;
+    fn list_products_in_warehouse(&self, warehouse_id: WarehouseIdentifier) -> ApiFuture<StockMap>;
 
     fn get_warehouse_product(&self, warehouse_product_id: StockId) -> ApiFuture<Option<Stock>>;
 
     /// Find all products with id in all warehouses
     fn find_by_product_id(&self, product_id: ProductId) -> ApiFuture<Vec<Stock>>;
+}
+
+impl WarehouseClient for RpcClientImpl {
+    fn create_warehouse(&self, new_warehouse: WarehouseInput) -> ApiFuture<Warehouse> {
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::Warehouses))
+                .body(JsonPayload(new_warehouse)),
+        )
+    }
+    fn get_warehouse(&self, warehouse_id: WarehouseIdentifier) -> ApiFuture<Option<Warehouse>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::Warehouse { warehouse_id })),
+        )
+    }
+    fn update_warehouse(
+        &self,
+        warehouse_id: WarehouseIdentifier,
+        update_data: WarehouseUpdateData,
+    ) -> ApiFuture<Option<Warehouse>> {
+        http_req(
+            self.http_client
+                .put(&self.build_route(&Route::Warehouse { warehouse_id }))
+                .body(JsonPayload(update_data)),
+        )
+    }
+    fn delete_warehouse(&self, warehouse_id: WarehouseIdentifier) -> ApiFuture<Option<Warehouse>> {
+        http_req(
+            self.http_client
+                .delete(&self.build_route(&Route::Warehouse { warehouse_id })),
+        )
+    }
+    fn delete_all_warehouses(&self) -> ApiFuture<Vec<Warehouse>> {
+        http_req(
+            self.http_client
+                .delete(&self.build_route(&Route::Warehouses)),
+        )
+    }
+    fn get_warehouses_for_store(&self, store_id: StoreId) -> ApiFuture<Vec<Warehouse>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::WarehousesByStore { store_id })),
+        )
+    }
+
+    fn set_product_in_warehouse(
+        &self,
+        warehouse_id: WarehouseIdentifier,
+        product_id: ProductId,
+        quantity: Quantity,
+    ) -> ApiFuture<Stock> {
+        http_req(
+            self.http_client
+                .put(&self.build_route(&Route::StockInWarehouse {
+                    warehouse_id,
+                    product_id,
+                }))
+                .body(JsonPayload(StockSetPayload { quantity })),
+        )
+    }
+    fn get_product_in_warehouse(
+        &self,
+        warehouse_id: WarehouseIdentifier,
+        product_id: ProductId,
+    ) -> ApiFuture<Option<Stock>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::StockInWarehouse {
+                    warehouse_id,
+                    product_id,
+                })),
+        )
+    }
+    fn list_products_in_warehouse(&self, warehouse_id: WarehouseIdentifier) -> ApiFuture<StockMap> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::StocksInWarehouse { warehouse_id })),
+        )
+    }
+
+    fn get_warehouse_product(&self, stock_id: StockId) -> ApiFuture<Option<Stock>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::StockById { stock_id })),
+        )
+    }
+
+    /// Find all products with id in all warehouses
+    fn find_by_product_id(&self, product_id: ProductId) -> ApiFuture<Vec<Stock>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::StocksByProductId { product_id })),
+        )
+    }
 }

@@ -2,7 +2,6 @@ use rpc_client::RpcClientImpl;
 use types::*;
 use util::*;
 
-use serde_json;
 use stq_roles;
 use stq_types::*;
 
@@ -229,7 +228,7 @@ impl CartClient for RpcClientImpl {
                     customer,
                     product_id,
                 }))
-                .body(serde_json::to_string(&CartProductIncrementPayload { store_id }).unwrap()),
+                .body(JsonPayload(&CartProductIncrementPayload { store_id })),
         )
     }
 
@@ -245,7 +244,7 @@ impl CartClient for RpcClientImpl {
                     customer,
                     product_id,
                 }))
-                .body(serde_json::to_string(&CartProductQuantityPayload { value }).unwrap()),
+                .body(JsonPayload(&CartProductQuantityPayload { value })),
         )
     }
 
@@ -261,7 +260,7 @@ impl CartClient for RpcClientImpl {
                     customer,
                     product_id,
                 }))
-                .body(serde_json::to_string(&CartProductSelectionPayload { value }).unwrap()),
+                .body(JsonPayload(&CartProductSelectionPayload { value })),
         )
     }
 
@@ -277,7 +276,7 @@ impl CartClient for RpcClientImpl {
                     customer,
                     product_id,
                 }))
-                .body(serde_json::to_string(&CartProductCommentPayload { value }).unwrap()),
+                .body(JsonPayload(&CartProductCommentPayload { value })),
         )
     }
 
@@ -311,7 +310,7 @@ impl CartClient for RpcClientImpl {
         http_req(
             self.http_client
                 .post(&self.build_route(&Route::CartMerge))
-                .body(serde_json::to_string(&CartMergePayload { from, to }).unwrap()),
+                .body(JsonPayload(&CartMergePayload { from, to })),
         )
     }
 }

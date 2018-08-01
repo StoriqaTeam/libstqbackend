@@ -17,10 +17,10 @@ pub enum Route {
         warehouse_id: WarehouseIdentifier,
     },
     StocksInWarehouse {
-        warehouse_id: WarehouseIdentifier,
+        warehouse_id: WarehouseId,
     },
     StockInWarehouse {
-        warehouse_id: WarehouseIdentifier,
+        warehouse_id: WarehouseId,
         product_id: ProductId,
     },
     StocksByProductId {
@@ -59,14 +59,14 @@ impl RouteBuilder for Route {
             }
             StocksInWarehouse { warehouse_id } => format!(
                 "warehouses/{}/products",
-                warehouse_identifier_route(warehouse_id)
+                warehouse_identifier_route(&WarehouseIdentifier::Id(*warehouse_id))
             ),
             StockInWarehouse {
                 warehouse_id,
                 product_id,
             } => format!(
                 "warehouses/{}/products/{}",
-                warehouse_identifier_route(warehouse_id),
+                warehouse_identifier_route(&WarehouseIdentifier::Id(*warehouse_id)),
                 product_id
             ),
             StocksByProductId { product_id } => format!("stocks/by-product-id/{}", product_id),
@@ -252,16 +252,16 @@ pub trait WarehouseClient {
 
     fn set_product_in_warehouse(
         &self,
-        warehouse_id: WarehouseIdentifier,
+        warehouse_id: WarehouseId,
         product_id: ProductId,
         quantity: Quantity,
     ) -> ApiFuture<Stock>;
     fn get_product_in_warehouse(
         &self,
-        warehouse_id: WarehouseIdentifier,
+        warehouse_id: WarehouseId,
         product_id: ProductId,
     ) -> ApiFuture<Option<Stock>>;
-    fn list_products_in_warehouse(&self, warehouse_id: WarehouseIdentifier) -> ApiFuture<StockMap>;
+    fn list_products_in_warehouse(&self, warehouse_id: WarehouseId) -> ApiFuture<StockMap>;
 
     fn get_warehouse_product(&self, warehouse_product_id: StockId) -> ApiFuture<Option<Stock>>;
 
@@ -315,7 +315,7 @@ impl WarehouseClient for RpcClientImpl {
 
     fn set_product_in_warehouse(
         &self,
-        warehouse_id: WarehouseIdentifier,
+        warehouse_id: WarehouseId,
         product_id: ProductId,
         quantity: Quantity,
     ) -> ApiFuture<Stock> {
@@ -330,7 +330,7 @@ impl WarehouseClient for RpcClientImpl {
     }
     fn get_product_in_warehouse(
         &self,
-        warehouse_id: WarehouseIdentifier,
+        warehouse_id: WarehouseId,
         product_id: ProductId,
     ) -> ApiFuture<Option<Stock>> {
         http_req(
@@ -341,7 +341,7 @@ impl WarehouseClient for RpcClientImpl {
                 })),
         )
     }
-    fn list_products_in_warehouse(&self, warehouse_id: WarehouseIdentifier) -> ApiFuture<StockMap> {
+    fn list_products_in_warehouse(&self, warehouse_id: WarehouseId) -> ApiFuture<StockMap> {
         http_req(
             self.http_client
                 .get(&self.build_route(&Route::StocksInWarehouse { warehouse_id })),

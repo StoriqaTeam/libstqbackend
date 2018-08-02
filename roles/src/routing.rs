@@ -38,7 +38,7 @@ where
             .and_then(|string_id| string_id.parse().ok())
             .map(|v| Route::RolesByUserId(v).into())
     });
-    route_parser.add_route_with_params(r"^/roles/by-id/(\S+)$", |params| {
+    route_parser.add_route_with_params(r"^/roles/by-id/([a-zA-Z0-9-]+)$", |params| {
         params
             .get(0)
             .and_then(|string_id| string_id.parse().ok())

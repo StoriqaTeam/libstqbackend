@@ -363,11 +363,11 @@ pub struct Order {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConvertCartPayload {
     pub conversion_id: Option<ConversionId>,
-    pub customer_id: UserId,
+    pub user_id: UserId,
     pub receiver_name: String,
     #[serde(flatten)]
     pub address: AddressFull,
-    pub prices: HashMap<ProductId, ProductSellerPrice>,
+    pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -386,7 +386,7 @@ pub struct OrderSearchTerms {
     pub state: Option<OrderState>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OrderDiff {
     pub id: OrderDiffId,
     pub parent: OrderId,
@@ -405,7 +405,7 @@ pub trait OrderClient {
         address: AddressFull,
         receiver_name: String,
     ) -> ApiFuture<Vec<Order>>;
-    fn revert_cart_conversion(&self, convertation_id: ConversionId) -> ApiFuture<()>;
+    fn revert_cart_conversion(&self, conversion_id: ConversionId) -> ApiFuture<()>;
     fn get_order(&self, id: OrderIdentifier) -> ApiFuture<Option<Order>>;
     fn get_order_diff(&self, id: OrderIdentifier) -> ApiFuture<Vec<OrderDiff>>;
     fn get_orders_for_user(&self, user_id: UserId) -> ApiFuture<Vec<Order>>;
@@ -438,25 +438,54 @@ impl OrderClient for RpcClientImpl {
         address: AddressFull,
         receiver_name: String,
     ) -> ApiFuture<Vec<Order>> {
-        unimplemented!()
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::OrderFromCart))
+                .body(JsonPayload(ConvertCartPayload {
+                    conversion_id,
+                    user_id,
+                    seller_prices,
+                    address,
+                    receiver_name,
+                })),
+        )
     }
-    fn revert_cart_conversion(&self, convertation_id: ConversionId) -> ApiFuture<()> {
-        unimplemented!()
+    fn revert_cart_conversion(&self, conversion_id: ConversionId) -> ApiFuture<()> {
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::OrderFromCartRevert))
+                .body(JsonPayload(ConvertCartRevertPayload { conversion_id })),
+        )
     }
-    fn get_order(&self, id: OrderIdentifier) -> ApiFuture<Option<Order>> {
-        unimplemented!()
+    fn get_order(&self, order_id: OrderIdentifier) -> ApiFuture<Option<Order>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::Order { order_id })),
+        )
     }
-    fn get_order_diff(&self, id: OrderIdentifier) -> ApiFuture<Vec<OrderDiff>> {
-        unimplemented!()
+    fn get_order_diff(&self, order_id: OrderIdentifier) -> ApiFuture<Vec<OrderDiff>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::OrderDiff { order_id })),
+        )
     }
-    fn get_orders_for_user(&self, user_id: UserId) -> ApiFuture<Vec<Order>> {
-        unimplemented!()
+    fn get_orders_for_user(&self, user: UserId) -> ApiFuture<Vec<Order>> {
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::OrdersByUser { user })),
+        )
     }
     fn get_orders_for_store(&self, store_id: StoreId) -> ApiFuture<Vec<Order>> {
-        unimplemented!()
+        http_req(
+            self.http_client
+                .get(&self.build_route(&Route::OrdersByStore { store_id })),
+        )
     }
-    fn delete_order(&self, id: OrderIdentifier) -> ApiFuture<()> {
-        unimplemented!()
+    fn delete_order(&self, order_id: OrderIdentifier) -> ApiFuture<()> {
+        http_req(
+            self.http_client
+                .delete(&self.build_route(&Route::Order { order_id })),
+        )
     }
     fn set_order_state(
         &self,
@@ -465,9 +494,21 @@ impl OrderClient for RpcClientImpl {
         comment: Option<String>,
         track_id: Option<String>,
     ) -> ApiFuture<Option<Order>> {
-        unimplemented!()
+        http_req(
+            self.http_client
+                .put(&self.build_route(&Route::OrderStatus { order_id }))
+                .body(JsonPayload(UpdateStatePayload {
+                    state,
+                    comment,
+                    track_id,
+                })),
+        )
     }
     fn search(&self, terms: OrderSearchTerms) -> ApiFuture<Vec<Order>> {
-        unimplemented!()
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::OrderSearch))
+                .body(JsonPayload(terms)),
+        )
     }
 }

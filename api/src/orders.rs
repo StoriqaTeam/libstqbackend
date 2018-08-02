@@ -41,6 +41,9 @@ pub enum Route {
     OrderFromCartRevert,
     OrderSearch,
     Orders,
+    OrdersByUser {
+        user: UserId,
+    },
     OrdersByStore {
         store_id: StoreId,
     },
@@ -134,6 +137,7 @@ impl RouteBuilder for Route {
             OrderFromCartRevert => "orders/create_from_cart/revert".to_string(),
             OrderSearch => "orders/search".to_string(),
             Orders => "orders".to_string(),
+            OrdersByUser { user_id } => format!("orders/by-user/{}", user_id),
             OrdersByStore { store_id } => format!("orders/by-store/{}", store_id),
             Order { order_id } => format!("orders/{}", order_identifier_route(order_id)),
             OrderDiff { order_id } => format!("order_diffs/{}", order_identifier_route(order_id)),

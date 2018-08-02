@@ -1,3 +1,4 @@
+extern crate chrono;
 extern crate failure;
 extern crate futures;
 extern crate geo;
@@ -8,6 +9,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate stq_roles;
+extern crate stq_static_resources;
 extern crate stq_types;
 
 pub mod orders;

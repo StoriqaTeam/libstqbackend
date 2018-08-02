@@ -3,6 +3,7 @@ name = "stq_api"
 version = "0.1.0"
 
 [dependencies]
+chrono = { version = "*", features = ["serde"] }
 failure = "0.1"
 futures = "0.1"
 geo = "*"
@@ -13,4 +14,5 @@ serde_derive = "*"
 serde_json = "*"
 stq_roles = { path = "../roles" }
 stq_router = { path = "../router" }
+stq_static_resources = { path = "../static_resources" }
 stq_types = { path = "../types" }

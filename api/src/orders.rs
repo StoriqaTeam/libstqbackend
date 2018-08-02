@@ -2,7 +2,11 @@ use rpc_client::RpcClientImpl;
 use types::*;
 use util::*;
 
+use chrono::prelude::*;
+use geo::Point as GeoPoint;
+use std::collections::HashMap;
 use stq_roles;
+use stq_static_resources::OrderState;
 use stq_types::*;
 
 #[derive(Clone, Debug)]
@@ -137,7 +141,7 @@ impl RouteBuilder for Route {
             OrderFromCartRevert => "orders/create_from_cart/revert".to_string(),
             OrderSearch => "orders/search".to_string(),
             Orders => "orders".to_string(),
-            OrdersByUser { user_id } => format!("orders/by-user/{}", user_id),
+            OrdersByUser { user } => format!("orders/by-user/{}", user),
             OrdersByStore { store_id } => format!("orders/by-store/{}", store_id),
             Order { order_id } => format!("orders/{}", order_identifier_route(order_id)),
             OrderDiff { order_id } => format!("order_diffs/{}", order_identifier_route(order_id)),
@@ -316,5 +320,139 @@ impl CartClient for RpcClientImpl {
                 .post(&self.build_route(&Route::CartMerge))
                 .body(JsonPayload(&CartMergePayload { from, to })),
         )
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct AddressFull {
+    pub location: Option<GeoPoint<f64>>,
+    pub administrative_area_level_1: Option<String>,
+    pub administrative_area_level_2: Option<String>,
+    pub country: Option<String>,
+    pub locality: Option<String>,
+    pub political: Option<String>,
+    pub postal_code: Option<String>,
+    pub route: Option<String>,
+    pub street_number: Option<String>,
+    pub address: Option<String>,
+    pub place_id: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Order {
+    pub id: OrderId,
+    pub created_from: CartItemId,
+    pub conversion_id: ConversionId,
+    pub slug: OrderSlug,
+    pub customer: UserId,
+    pub store: StoreId,
+    pub product: ProductId,
+    pub price: ProductPrice,
+    pub currency_id: CurrencyId,
+    pub quantity: Quantity,
+    pub address: AddressFull,
+    pub receiver_name: String,
+    pub state: OrderState,
+    pub payment_status: bool,
+    pub delivery_company: Option<String>,
+    pub track_id: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OrderSearchTerms {
+    pub slug: Option<OrderSlug>,
+    pub created_from: Option<DateTime<Utc>>,
+    pub created_to: Option<DateTime<Utc>>,
+    pub payment_status: Option<bool>,
+    pub customer: Option<UserId>,
+    pub store: Option<StoreId>,
+    pub state: Option<OrderState>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct OrderDiff {
+    pub id: OrderDiffId,
+    pub parent: OrderId,
+    pub committer: UserId,
+    pub committed_at: DateTime<Utc>,
+    pub state: OrderState,
+    pub comment: Option<String>,
+}
+
+pub trait OrderClient {
+    fn convert_cart(
+        &self,
+        conversion_id: Option<ConversionId>,
+        user_id: UserId,
+        seller_prices: HashMap<ProductId, ProductSellerPrice>,
+        address: AddressFull,
+        receiver_name: String,
+    ) -> ApiFuture<Vec<Order>>;
+    fn revert_cart_conversion(&self, convertation_id: ConversionId) -> ApiFuture<()>;
+    fn get_order(&self, id: OrderIdentifier) -> ApiFuture<Option<Order>>;
+    fn get_order_diff(&self, id: OrderIdentifier) -> ApiFuture<Vec<OrderDiff>>;
+    fn get_orders_for_user(&self, user_id: UserId) -> ApiFuture<Vec<Order>>;
+    fn get_orders_for_store(&self, store_id: StoreId) -> ApiFuture<Vec<Order>>;
+    fn delete_order(&self, id: OrderIdentifier) -> ApiFuture<()>;
+    fn set_order_state(
+        &self,
+        order_id: OrderIdentifier,
+        state: OrderState,
+        comment: Option<String>,
+        track_id: Option<String>,
+    ) -> ApiFuture<Option<Order>>;
+    /// Search using the terms provided.
+    fn search(&self, terms: OrderSearchTerms) -> ApiFuture<Vec<Order>>;
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct UpdateStatePayload {
+    pub state: OrderState,
+    pub track_id: Option<String>,
+    pub comment: Option<String>,
+}
+
+impl OrderClient for RpcClientImpl {
+    fn convert_cart(
+        &self,
+        conversion_id: Option<ConversionId>,
+        user_id: UserId,
+        seller_prices: HashMap<ProductId, ProductSellerPrice>,
+        address: AddressFull,
+        receiver_name: String,
+    ) -> ApiFuture<Vec<Order>> {
+        unimplemented!()
+    }
+    fn revert_cart_conversion(&self, convertation_id: ConversionId) -> ApiFuture<()> {
+        unimplemented!()
+    }
+    fn get_order(&self, id: OrderIdentifier) -> ApiFuture<Option<Order>> {
+        unimplemented!()
+    }
+    fn get_order_diff(&self, id: OrderIdentifier) -> ApiFuture<Vec<OrderDiff>> {
+        unimplemented!()
+    }
+    fn get_orders_for_user(&self, user_id: UserId) -> ApiFuture<Vec<Order>> {
+        unimplemented!()
+    }
+    fn get_orders_for_store(&self, store_id: StoreId) -> ApiFuture<Vec<Order>> {
+        unimplemented!()
+    }
+    fn delete_order(&self, id: OrderIdentifier) -> ApiFuture<()> {
+        unimplemented!()
+    }
+    fn set_order_state(
+        &self,
+        order_id: OrderIdentifier,
+        state: OrderState,
+        comment: Option<String>,
+        track_id: Option<String>,
+    ) -> ApiFuture<Option<Order>> {
+        unimplemented!()
+    }
+    fn search(&self, terms: OrderSearchTerms) -> ApiFuture<Vec<Order>> {
+        unimplemented!()
     }
 }

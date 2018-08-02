@@ -1,4 +1,4 @@
-use rpc_client::RpcClientImpl;
+use rpc_client::RestApiClient;
 use types::*;
 use util::*;
 
@@ -216,7 +216,7 @@ pub trait CartClient {
     fn merge(&self, from: SessionId, to: UserId) -> ApiFuture<Cart>;
 }
 
-impl CartClient for RpcClientImpl {
+impl CartClient for RestApiClient {
     fn get_cart(&self, customer: CartCustomer) -> ApiFuture<Cart> {
         http_req(
             self.http_client
@@ -429,7 +429,7 @@ pub struct UpdateStatePayload {
     pub comment: Option<String>,
 }
 
-impl OrderClient for RpcClientImpl {
+impl OrderClient for RestApiClient {
     fn convert_cart(
         &self,
         conversion_id: Option<ConversionId>,

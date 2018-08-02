@@ -7,12 +7,12 @@ use std::sync::Arc;
 use stq_types::UserId;
 
 #[derive(Clone, Debug)]
-pub struct RpcClientImpl {
+pub struct RestApiClient {
     pub(crate) http_client: Arc<HttpClient>,
     pub(crate) base_url: String,
 }
 
-impl RpcClientImpl {
+impl RestApiClient {
     pub fn new<S>(base_url: &S, caller_id: Option<UserId>) -> Self
     where
         S: ToString,

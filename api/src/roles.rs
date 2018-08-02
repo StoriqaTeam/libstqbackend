@@ -1,4 +1,4 @@
-use rpc_client::RpcClientImpl;
+use rpc_client::RestApiClient;
 use types::*;
 use util::*;
 
@@ -27,7 +27,7 @@ where
     fn remove_role(&self, terms: RoleSearchTerms<T>) -> ApiFuture<Option<RoleEntry<T>>>;
 }
 
-impl<T> RolesClient<T> for RpcClientImpl
+impl<T> RolesClient<T> for RestApiClient
 where
     T: RoleModel + Clone + Debug + Serialize + DeserializeOwned + Send,
 {

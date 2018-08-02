@@ -269,7 +269,7 @@ pub trait WarehouseClient {
     fn find_by_product_id(&self, product_id: ProductId) -> ApiFuture<Vec<Stock>>;
 }
 
-impl WarehouseClient for RpcClientImpl {
+impl WarehouseClient for RestApiClient {
     fn create_warehouse(&self, new_warehouse: WarehouseInput) -> ApiFuture<Warehouse> {
         http_req(
             self.http_client

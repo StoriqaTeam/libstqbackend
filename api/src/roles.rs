@@ -2,10 +2,6 @@ use rpc_client::RpcClientImpl;
 use types::*;
 use util::*;
 
-use failure;
-use futures::future;
-use futures::prelude::*;
-use reqwest::unstable::async::RequestBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
 use stq_roles::models::*;
@@ -43,34 +39,23 @@ where
     }
 
     fn create_role(&self, item: RoleEntry<T>) -> ApiFuture<RoleEntry<T>> {
-        let http_client = self.http_client.clone();
-        let route = self.build_route(&Route::Roles);
-        Box::new(
-            serialize_payload(item)
-                .and_then(move |body| http_req(http_client.post(&route).body(body))),
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::Roles))
+                .body(JsonPayload(item)),
         )
     }
 
     fn remove_role(&self, terms: RoleSearchTerms<T>) -> ApiFuture<Option<RoleEntry<T>>> {
-        let http_client = self.http_client.clone();
-        Box::new({
-            let fut = match terms {
-                RoleSearchTerms::Id(id) => Box::new(future::ok(
-                    http_client.delete(&self.build_route(&Route::RoleById(id))),
-                ))
-                    as Box<Future<Item = RequestBuilder, Error = failure::Error> + Send>,
-                RoleSearchTerms::Meta((user_id, entry)) => {
-                    let route = self.build_route(&Route::RolesByUserId(user_id));
-                    Box::new(serialize_payload(entry).map(move |body| {
-                        let mut req = http_client.delete(&route);
-                        req.body(body);
-                        req
-                    }))
-                }
-            };
-
-            fut.and_then(|mut req| req.send().map_err(failure::Error::from))
-                .and_then(|mut rsp| rsp.json().map_err(failure::Error::from))
+        http_req(match terms {
+            RoleSearchTerms::Id(id) => self.http_client
+                .delete(&self.build_route(&Route::RoleById(id))),
+            RoleSearchTerms::Meta((user_id, entry)) => {
+                let mut req = self.http_client
+                    .delete(&self.build_route(&Route::RolesByUserId(user_id)));
+                req.body(JsonPayload(entry));
+                req
+            }
         })
     }
 }

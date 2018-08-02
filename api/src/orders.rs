@@ -360,6 +360,21 @@ pub struct Order {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ConvertCartPayload {
+    pub conversion_id: Option<ConversionId>,
+    pub customer_id: UserId,
+    pub receiver_name: String,
+    #[serde(flatten)]
+    pub address: AddressFull,
+    pub prices: HashMap<ProductId, ProductSellerPrice>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ConvertCartRevertPayload {
+    pub conversion_id: ConversionId,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OrderSearchTerms {
     pub slug: Option<OrderSlug>,

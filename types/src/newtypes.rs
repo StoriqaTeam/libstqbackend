@@ -78,7 +78,7 @@ pub enum OrderIdentifier {
     Slug(OrderSlug),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Hash, Serialize, Deserialize)]
 pub enum CartCustomer {
     User(UserId),
     Anonymous(SessionId),

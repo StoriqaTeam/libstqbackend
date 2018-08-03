@@ -1,3 +1,4 @@
+use either::Either;
 use std;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -7,12 +8,57 @@ pub trait Filter {
     fn into_filtered_operation_builder(self, table: &'static str) -> FilteredOperationBuilder;
 }
 
+impl<L, R> Filter for Either<L, R>
+where
+    L: Filter,
+    R: Filter,
+{
+    fn into_filtered_operation_builder(self, table: &'static str) -> FilteredOperationBuilder {
+        use self::Either::*;
+
+        match self {
+            Left(v) => v.into_filtered_operation_builder(table),
+            Right(v) => v.into_filtered_operation_builder(table),
+        }
+    }
+}
+
 pub trait Inserter {
     fn into_insert_builder(self, table: &'static str) -> InsertBuilder;
 }
 
+impl<L, R> Inserter for Either<L, R>
+where
+    L: Inserter,
+    R: Inserter,
+{
+    fn into_insert_builder(self, table: &'static str) -> InsertBuilder {
+        use self::Either::*;
+
+        match self {
+            Left(v) => v.into_insert_builder(table),
+            Right(v) => v.into_insert_builder(table),
+        }
+    }
+}
+
 pub trait Updater {
     fn into_update_builder(self, table: &'static str) -> UpdateBuilder;
+}
+
+impl<L, R> Updater for Either<L, R>
+where
+    L: Updater,
+    R: Updater,
+{
+    fn into_update_builder(self, table: &'static str) -> UpdateBuilder {
+        use self::Either::*;
+
+        match self {
+            Left(v) => v.into_update_builder(table),
+            Right(v) => v.into_update_builder(table),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

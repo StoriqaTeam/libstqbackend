@@ -1,6 +1,7 @@
 //! This crate provides common utilities for DB interaction.
 extern crate bb8;
 extern crate bb8_postgres;
+extern crate either;
 #[macro_use]
 extern crate failure;
 extern crate futures;

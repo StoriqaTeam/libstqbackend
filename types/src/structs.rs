@@ -1,11 +1,5 @@
 use super::*;
 
-use std::collections::HashMap;
-
-fn return_true() -> bool {
-    true
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ProductSellerPrice {
     pub price: ProductPrice,
@@ -13,12 +7,14 @@ pub struct ProductSellerPrice {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CartItemInfo {
+pub struct CartItem {
+    pub id: CartItemId,
+    pub customer: CartCustomer,
+    pub product_id: ProductId,
     pub quantity: Quantity,
-    #[serde(default = "return_true")]
     pub selected: bool,
     pub comment: String,
     pub store_id: StoreId,
 }
 
-pub type Cart = HashMap<ProductId, CartItemInfo>;
+pub type Cart = Vec<CartItem>;

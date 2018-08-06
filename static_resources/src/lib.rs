@@ -9,6 +9,8 @@ extern crate isolang;
 extern crate stq_diesel_macro_derive;
 #[macro_use]
 extern crate postgres;
+#[macro_use]
+extern crate enum_iter;
 extern crate postgres_protocol;
 
 pub mod attribute_type;

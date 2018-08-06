@@ -6,7 +6,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
-#[derive(GraphQLEnum, Deserialize, Serialize, Debug, Clone, Copy, PartialEq, DieselTypes)]
+#[derive(GraphQLEnum, Deserialize, Serialize, Debug, Clone, Copy, PartialEq, DieselTypes, EnumIterator)]
 #[graphql(name = "OrderState", description = "Current order status")]
 pub enum OrderState {
     #[graphql(description = "State set on order creation.")]
@@ -159,23 +159,5 @@ impl<'a> FromSql<'a> for OrderState {
 
     fn accepts(ty: &Type) -> bool {
         <&str as FromSql>::accepts(ty)
-    }
-}
-
-impl OrderState {
-    pub fn as_vec() -> Vec<OrderState> {
-        vec![
-            OrderState::New,
-            OrderState::PaymentAwaited,
-            OrderState::TransactionPending,
-            OrderState::AmountExpired,
-            OrderState::Paid,
-            OrderState::InProcessing,
-            OrderState::Cancelled,
-            OrderState::Sent,
-            OrderState::Delivered,
-            OrderState::Received,
-            OrderState::Complete,
-        ]
     }
 }

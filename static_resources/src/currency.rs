@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use juniper::FieldError;
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, EnumIterator)]
 pub enum Currency {
     Rouble = 1,
     Euro,
@@ -27,14 +27,7 @@ impl CurrencyGraphQl {
 
 impl Currency {
     pub fn as_vec() -> Vec<CurrencyGraphQl> {
-        vec![
-            Currency::Rouble,
-            Currency::Euro,
-            Currency::Dollar,
-            Currency::Bitcoin,
-            Currency::Etherium,
-            Currency::Stq,
-        ].into_iter()
+        Currency::enum_iter()
             .map(|value| CurrencyGraphQl::new(value as i32, value.to_string()))
             .collect()
     }

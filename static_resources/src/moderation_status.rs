@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(GraphQLEnum, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+#[derive(GraphQLEnum, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes, EnumIterator)]
 #[graphql(name = "Status", description = "Current moderation status")]
 pub enum ModerationStatus {
     Draft,
@@ -31,5 +31,16 @@ impl fmt::Display for ModerationStatus {
             ModerationStatus::Decline => write!(f, "decline"),
             ModerationStatus::Published => write!(f, "published"),
         }
+    }
+}
+
+impl ModerationStatus {
+    pub fn as_vec() -> Vec<ModerationStatus> {
+        vec![
+            ModerationStatus::Draft,
+            ModerationStatus::Moderation,
+            ModerationStatus::Decline,
+            ModerationStatus::Published,
+        ]
     }
 }

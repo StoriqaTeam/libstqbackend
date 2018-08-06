@@ -11,3 +11,4 @@ postgres-protocol = { git = "https://github.com/StoriqaTeam/rust-postgres" }
 serde = "1.0"
 serde_derive = "1.0"
 stq_diesel_macro_derive = { path = "../diesel_macro_derive" }
+enum-iter = { git = "https://github.com/vorot93/enum-iter" }

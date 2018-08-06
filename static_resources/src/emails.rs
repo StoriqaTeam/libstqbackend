@@ -1,5 +1,3 @@
-use super::*;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SimpleMail {
     pub to: String,
@@ -22,7 +20,7 @@ pub trait Email {
 pub struct OrderUpdateStateForUser {
     pub user: EmailUser,
     pub order_slug: String,
-    pub order_state: OrderState,
+    pub order_state: String,
     pub cluster_url: String,
 }
 
@@ -43,7 +41,7 @@ impl Email for OrderUpdateStateForUser {
 pub struct OrderUpdateStateForStore {
     pub store_email: String,
     pub order_slug: String,
-    pub order_state: OrderState,
+    pub order_state: String,
     pub cluster_url: String,
     pub store_id: String,
 }

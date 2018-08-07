@@ -8,6 +8,8 @@ failure = "0.1"
 futures = "0.1"
 geo = "*"
 hyper = "0.12"
+lazy_static = "*"
+regex = "*"
 reqwest = { git = "https://github.com/seanmonstar/reqwest", features = ["unstable"] }
 serde = "*"
 serde_derive = "*"
@@ -16,3 +18,5 @@ stq_roles = { path = "../roles" }
 stq_router = { path = "../router" }
 stq_static_resources = { path = "../static_resources" }
 stq_types = { path = "../types" }
+validator_derive = "*"
+validator = "*"

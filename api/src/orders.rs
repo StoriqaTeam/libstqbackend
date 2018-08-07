@@ -4,10 +4,12 @@ use util::*;
 
 use chrono::prelude::*;
 use geo::Point as GeoPoint;
+use regex::Regex;
 use std::collections::HashMap;
 use stq_roles;
 use stq_static_resources::OrderState;
 use stq_types::*;
+use validator::{Validate, ValidationError};
 
 #[derive(Clone, Debug)]
 pub enum Route {
@@ -352,6 +354,7 @@ pub struct Order {
     pub quantity: Quantity,
     pub address: AddressFull,
     pub receiver_name: String,
+    pub receiver_phone: String,
     pub state: OrderState,
     pub payment_status: bool,
     pub delivery_company: Option<String>,
@@ -360,11 +363,29 @@ pub struct Order {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
+    lazy_static! {
+        static ref PHONE_VALIDATION_RE: Regex = Regex::new(r"^\+?\d{7}\d*$").unwrap();
+    }
+
+    if PHONE_VALIDATION_RE.is_match(phone) {
+        Ok(())
+    } else {
+        Err(ValidationError {
+            code: "phone".into(),
+            message: Some("Incorrect phone format".into()),
+            params: HashMap::new(),
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Validate)]
 pub struct ConvertCartPayload {
     pub conversion_id: Option<ConversionId>,
     pub user_id: UserId,
     pub receiver_name: String,
+    #[validate(custom = "validate_phone")]
+    pub receiver_phone: String,
     #[serde(flatten)]
     pub address: AddressFull,
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
@@ -404,6 +425,7 @@ pub trait OrderClient {
         seller_prices: HashMap<ProductId, ProductSellerPrice>,
         address: AddressFull,
         receiver_name: String,
+        receiver_phone: String,
     ) -> ApiFuture<Vec<Order>>;
     fn revert_cart_conversion(&self, conversion_id: ConversionId) -> ApiFuture<()>;
     fn get_order(&self, id: OrderIdentifier) -> ApiFuture<Option<Order>>;
@@ -437,6 +459,7 @@ impl OrderClient for RestApiClient {
         seller_prices: HashMap<ProductId, ProductSellerPrice>,
         address: AddressFull,
         receiver_name: String,
+        receiver_phone: String,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
             self.http_client
@@ -447,6 +470,7 @@ impl OrderClient for RestApiClient {
                     seller_prices,
                     address,
                     receiver_name,
+                    receiver_phone,
                 })),
         )
     }

@@ -407,7 +407,7 @@ pub struct OrderSearchTerms {
     pub state: Option<OrderState>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct OrderDiff {
     pub id: OrderDiffId,
     pub parent: OrderId,

@@ -222,7 +222,7 @@ impl CartClient for RestApiClient {
     fn get_cart(&self, customer: CartCustomer) -> ApiFuture<Cart> {
         http_req(
             self.http_client
-                .get(&self.build_route(&Route::Cart { customer })),
+                .get(&self.build_route(&Route::CartProducts { customer })),
         )
     }
 

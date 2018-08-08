@@ -172,8 +172,8 @@ pub struct CartProductIncrementPayload {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CartMergePayload {
-    pub from: SessionId,
-    pub to: UserId,
+    pub from: CartCustomer,
+    pub to: CartCustomer,
 }
 
 /// Service that provides operations for interacting with user carts
@@ -215,7 +215,7 @@ pub trait CartClient {
     /// Iterate over cart
     fn list(&self, customer: CartCustomer, from: ProductId, count: i32) -> ApiFuture<Cart>;
     /// Merge carts
-    fn merge(&self, from: SessionId, to: UserId) -> ApiFuture<Cart>;
+    fn merge(&self, from: CartCustomer, to: CartCustomer) -> ApiFuture<Cart>;
 }
 
 impl CartClient for RestApiClient {
@@ -316,7 +316,7 @@ impl CartClient for RestApiClient {
         )))
     }
 
-    fn merge(&self, from: SessionId, to: UserId) -> ApiFuture<Cart> {
+    fn merge(&self, from: CartCustomer, to: CartCustomer) -> ApiFuture<Cart> {
         http_req(
             self.http_client
                 .post(&self.build_route(&Route::CartMerge))

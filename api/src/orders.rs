@@ -109,7 +109,7 @@ impl RouteBuilder for Route {
                 customer,
                 product_id,
             } => format!(
-                "cart/{}/product/{}",
+                "cart/{}/products/{}",
                 cart_customer_route(customer),
                 product_id
             ),
@@ -117,7 +117,7 @@ impl RouteBuilder for Route {
                 customer,
                 product_id,
             } => format!(
-                "cart/{}/product/{}/quantity",
+                "cart/{}/products/{}/quantity",
                 cart_customer_route(customer),
                 product_id
             ),
@@ -125,7 +125,7 @@ impl RouteBuilder for Route {
                 customer,
                 product_id,
             } => format!(
-                "cart/{}/product/{}/selection",
+                "cart/{}/products/{}/selection",
                 cart_customer_route(customer),
                 product_id
             ),
@@ -133,7 +133,7 @@ impl RouteBuilder for Route {
                 customer,
                 product_id,
             } => format!(
-                "cart/{}/product/{}/comment",
+                "cart/{}/products/{}/comment",
                 cart_customer_route(customer),
                 product_id
             ),

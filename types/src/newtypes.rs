@@ -65,25 +65,6 @@ uuid_newtype!(SessionId);
 
 f64_newtype!(ProductPrice);
 
-#[derive(Clone, Debug, PartialEq, Hash)]
-pub enum WarehouseIdentifier {
-    Id(WarehouseId),
-    Slug(WarehouseSlug),
-}
-
-/// Anything that can uniquely identify an Order
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub enum OrderIdentifier {
-    Id(OrderId),
-    Slug(OrderSlug),
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Hash, Serialize, Deserialize)]
-pub enum CartCustomer {
-    User(UserId),
-    Anonymous(SessionId),
-}
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into, Hash,
          Serialize, Deserialize, DieselTypes)]
 pub struct CurrencyId(pub i32);

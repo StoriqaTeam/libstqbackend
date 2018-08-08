@@ -137,8 +137,8 @@ impl RouteBuilder for Route {
                 cart_customer_route(customer),
                 product_id
             ),
-            CartClear { customer } => format!("cart/{}/clear$", cart_customer_route(customer)),
-            CartMerge => "cart/merge$".to_string(),
+            CartClear { customer } => format!("cart/{}/clear", cart_customer_route(customer)),
+            CartMerge => "cart/merge".to_string(),
             OrderFromCart => "orders/create_from_cart".to_string(),
             OrderFromCartRevert => "orders/create_from_cart/revert".to_string(),
             OrderSearch => "orders/search".to_string(),

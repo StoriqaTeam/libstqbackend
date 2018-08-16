@@ -1,4 +1,5 @@
 extern crate chrono;
+#[macro_use]
 extern crate failure;
 extern crate futures;
 extern crate geo;
@@ -18,6 +19,7 @@ extern crate validator;
 #[macro_use]
 extern crate validator_derive;
 
+pub mod errors;
 pub mod orders;
 pub mod roles;
 pub mod rpc_client;

@@ -1,6 +1,6 @@
 use failure;
 use futures::prelude::*;
-use reqwest::unstable::async::Body;
+use reqwest::async::Body;
 use serde::Serialize;
 use serde_json;
 use std::convert::Into;

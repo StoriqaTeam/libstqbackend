@@ -50,12 +50,9 @@ where
         http_req(match terms {
             RoleSearchTerms::Id(id) => self.http_client
                 .delete(&self.build_route(&Route::RoleById(id))),
-            RoleSearchTerms::Meta((user_id, entry)) => {
-                let mut req = self.http_client
-                    .delete(&self.build_route(&Route::RolesByUserId(user_id)));
-                req.body(JsonPayload(entry));
-                req
-            }
+            RoleSearchTerms::Meta((user_id, entry)) => self.http_client
+                .delete(&self.build_route(&Route::RolesByUserId(user_id)))
+                .body(JsonPayload(entry)),
         })
     }
 }

@@ -15,6 +15,7 @@ extern crate serde_json;
 extern crate stq_roles;
 extern crate stq_static_resources;
 extern crate stq_types;
+extern crate tokio_core;
 extern crate validator;
 #[macro_use]
 extern crate validator_derive;

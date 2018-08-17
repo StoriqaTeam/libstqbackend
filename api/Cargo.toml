@@ -19,5 +19,6 @@ stq_roles = { path = "../roles" }
 stq_router = { path = "../router" }
 stq_static_resources = { path = "../static_resources" }
 stq_types = { path = "../types" }
+tokio-core = "*"
 validator_derive = "*"
 validator = "*"

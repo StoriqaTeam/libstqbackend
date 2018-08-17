@@ -5,6 +5,18 @@ use reqwest::async::Body;
 use serde::Serialize;
 use serde_json;
 use std::convert::Into;
+use tokio_core::reactor::Core;
+
+pub trait ApiFutureExt<T, E> {
+    fn sync(self) -> Result<T, E>;
+}
+
+impl<T> ApiFutureExt<T, Error> for ApiFuture<T> {
+    fn sync(self) -> Result<T, Error> {
+        let mut core = Core::new().unwrap();
+        core.run(self)
+    }
+}
 
 pub type ApiFuture<T> = Box<Future<Item = T, Error = Error> + Send>;
 

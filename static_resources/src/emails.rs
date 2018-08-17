@@ -163,3 +163,24 @@ impl Email for ApplyEmailVerificationForUser {
         }
     }
 }
+
+#[derive(GraphQLEnum, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Debug, DieselTypes)]
+#[graphql(name = "TemplateVariant", description = "Template variant")]
+pub enum TemplateVariant {
+    #[graphql(description = "order update state for user.")]
+    OrderUpdateStateForUser,
+    #[graphql(description = "order update state for store.")]
+    OrderUpdateStateForStore,
+    #[graphql(description = "order create for user.")]
+    OrderCreateForUser,
+    #[graphql(description = "order create for store.")]
+    OrderCreateForStore,
+    #[graphql(description = "email verification.")]
+    EmailVerificationForUser,
+    #[graphql(description = "password reset.")]
+    PasswordResetForUser,
+    #[graphql(description = "apply password reset.")]
+    ApplyPasswordResetForUser,
+    #[graphql(description = "apply email verification.")]
+    ApplyEmailVerificationForUser,
+}

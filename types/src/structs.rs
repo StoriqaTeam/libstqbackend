@@ -1,12 +1,14 @@
 use super::*;
 
+use std::collections::HashSet;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ProductSellerPrice {
     pub price: ProductPrice,
     pub currency_id: CurrencyId,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct CartItem {
     pub id: CartItemId,
     pub customer: CartCustomer,
@@ -17,4 +19,4 @@ pub struct CartItem {
     pub store_id: StoreId,
 }
 
-pub type Cart = Vec<CartItem>;
+pub type Cart = HashSet<CartItem>;

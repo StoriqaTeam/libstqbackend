@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use juniper::FieldError;
 
+#[derive(Clone, Copy, Debug, EnumIterator, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Model {
     User,
     JWT,

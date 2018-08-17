@@ -1,4 +1,6 @@
 #[macro_use]
+extern crate enum_iter;
+#[macro_use]
 extern crate juniper;
 extern crate regex;
 extern crate serde;

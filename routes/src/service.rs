@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use juniper::FieldError;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, EnumIterator, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Service {
     Users,
     Stores,

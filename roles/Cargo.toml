@@ -14,5 +14,5 @@ stq_db = { path = "../db" }
 stq_http = { path = "../http" }
 stq_router = { path = "../router" }
 stq_types = { path = "../types" }
-tokio-postgres = { git = "https://github.com/StoriqaTeam/rust-postgres", features = ["with-geo-0.8", "with-serde_json-1", "with-uuid-0.6"] }
+tokio-postgres = { git = "https://github.com/StoriqaTeam/rust-postgres", features = ["with-serde_json-1", "with-uuid-0.6"] }
 uuid = { version = "*", features = ["serde", "v4"] }

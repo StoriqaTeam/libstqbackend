@@ -7,6 +7,7 @@ chrono = { version = "*", features = ["serde"] }
 failure = "0.1"
 futures = "0.1"
 geo = "*"
+geo-types = { version = "*", features = ["serde"] }
 hyper = "0.12"
 lazy_static = "*"
 regex = "*"

@@ -21,20 +21,20 @@ pub enum MerchantType {
     User,
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, From, Hash)]
 pub enum WarehouseIdentifier {
     Id(WarehouseId),
     Slug(WarehouseSlug),
 }
 
 /// Anything that can uniquely identify an Order
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, From, PartialEq, Hash)]
 pub enum OrderIdentifier {
     Id(OrderId),
     Slug(OrderSlug),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, From, Hash, Serialize, Deserialize)]
 pub enum CartCustomer {
     User(UserId),
     Anonymous(SessionId),

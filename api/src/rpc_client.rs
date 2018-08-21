@@ -1,7 +1,9 @@
 use util::*;
 
-use hyper::{header::{HeaderName, HeaderValue},
-            HeaderMap};
+use hyper::{
+    header::{HeaderName, HeaderValue},
+    HeaderMap,
+};
 use reqwest::async::{Client as HttpClient, ClientBuilder as HttpClientBuilder};
 use std::sync::Arc;
 use stq_types::UserId;

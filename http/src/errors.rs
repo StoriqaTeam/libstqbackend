@@ -28,7 +28,7 @@ where
     E: Fail + Codeable + PayloadCarrier,
 {
     pub fn from(e: &Error) -> Self {
-        let description = e.causes().fold(String::new(), |mut acc, real_err| {
+        let description = e.iter_chain().fold(String::new(), |mut acc, real_err| {
             if !acc.is_empty() {
                 acc += " | ";
             }
@@ -39,7 +39,7 @@ where
         let mut code = 500;
         let mut payload = None;
 
-        for cause in e.causes() {
+        for cause in e.iter_chain() {
             let real_err = if let Some(ctx) = cause.downcast_ref::<Context<E>>() {
                 Some(ctx.get_context())
             } else {

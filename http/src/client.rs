@@ -129,7 +129,8 @@ impl Client {
             }
         });
 
-        let work_with_timeout = work.map_err(Error::Network)
+        let work_with_timeout = work
+            .map_err(Error::Network)
             .and_then(move |res| {
                 let status = res.status();
                 let body_future: Box<Future<Item = String, Error = Error>> = Box::new(read_body(res.body()).map_err(Error::Network));
@@ -271,7 +272,8 @@ impl ClientHandle {
             callback: tx,
         };
 
-        let future = self.tx
+        let future = self
+            .tx
             .clone()
             .send(payload)
             .map_err(|err| Error::Unknown(format!("Unexpected error sending http client request params to channel: {}", err)))

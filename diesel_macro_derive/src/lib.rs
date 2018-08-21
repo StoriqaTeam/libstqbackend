@@ -74,7 +74,8 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
                         .iter()
                         .map(|f| {
                             let diesel_type = match &f.ty {
-                                Type::Path(p) => p.path
+                                Type::Path(p) => p
+                                    .path
                                     .segments
                                     .iter()
                                     .filter_map(|segment| match_types_names_to_diesel_types(&segment.ident.to_string()))
@@ -149,7 +150,8 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
             }
         }
         Data::Enum(ref data) => {
-            let variant_ids: Vec<proc_macro2::TokenStream> = data.variants
+            let variant_ids: Vec<proc_macro2::TokenStream> = data
+                .variants
                 .iter()
                 .map(|variant| {
                     if let Fields::Unit = variant.fields {
@@ -162,7 +164,8 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
                     }
                 })
                 .collect();
-            let variants_db: Vec<LitByteStr> = data.variants
+            let variants_db: Vec<LitByteStr> = data
+                .variants
                 .iter()
                 .map(|variant| LitByteStr::new(variant.ident.to_string().to_snake_case().as_bytes(), Span::call_site()))
                 .collect();

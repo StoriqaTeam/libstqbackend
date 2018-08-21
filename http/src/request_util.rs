@@ -50,13 +50,15 @@ where
 
 /// Reads body of request and response in Future format
 pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::Error> + Send> {
-    Box::new(body.fold(Vec::new(), |mut acc, chunk| {
-        acc.extend_from_slice(&*chunk);
-        future::ok::<_, hyper::Error>(acc)
-    }).and_then(|bytes| match String::from_utf8(bytes) {
-        Ok(data) => future::ok(data),
-        Err(err) => future::err(hyper::Error::Utf8(err.utf8_error())),
-    }))
+    Box::new(
+        body.fold(Vec::new(), |mut acc, chunk| {
+            acc.extend_from_slice(&*chunk);
+            future::ok::<_, hyper::Error>(acc)
+        }).and_then(|bytes| match String::from_utf8(bytes) {
+            Ok(data) => future::ok(data),
+            Err(err) => future::err(hyper::Error::Utf8(err.utf8_error())),
+        }),
+    )
 }
 
 pub fn serialize_future<T, E, F>(f: F) -> Box<Future<Item = String, Error = failure::Error>>

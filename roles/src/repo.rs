@@ -21,11 +21,7 @@ where
 }
 
 pub type RolesRepoImpl<T> = DbRepoImpl<RoleEntry<T>, RoleEntry<T>, RoleFilter<T>, DummyRoleUpdater>;
-impl<T> RolesRepo<T> for RolesRepoImpl<T>
-where
-    T: RoleModel,
-{
-}
+impl<T> RolesRepo<T> for RolesRepoImpl<T> where T: RoleModel {}
 
 pub fn make_su_repo<T>() -> RolesRepoImpl<T>
 where

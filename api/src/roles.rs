@@ -48,9 +48,11 @@ where
 
     fn remove_role(&self, terms: RoleSearchTerms<T>) -> ApiFuture<Option<RoleEntry<T>>> {
         http_req(match terms {
-            RoleSearchTerms::Id(id) => self.http_client
+            RoleSearchTerms::Id(id) => self
+                .http_client
                 .delete(&self.build_route(&Route::RoleById(id))),
-            RoleSearchTerms::Meta((user_id, entry)) => self.http_client
+            RoleSearchTerms::Meta((user_id, entry)) => self
+                .http_client
                 .delete(&self.build_route(&Route::RolesByUserId(user_id)))
                 .body(JsonPayload(entry)),
         })

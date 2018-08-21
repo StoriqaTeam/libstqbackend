@@ -411,5 +411,4 @@ where
     F: Filter,
     I: Inserter,
     U: Updater,
-{
-}
+{}

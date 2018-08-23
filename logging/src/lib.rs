@@ -51,6 +51,7 @@ impl Log for CombinedLogger {
 pub struct GrayLogConfig {
     /// Endpoint to send messages to
     pub addr: String,
+    pub cluster: Option<String>,
 }
 
 pub fn init(graylog_config: Option<&GrayLogConfig>) {
@@ -86,7 +87,11 @@ pub fn init(graylog_config: Option<&GrayLogConfig>) {
 
     if let Some(config) = graylog_config {
         let backend = gelf::UdpBackend::new(&config.addr).unwrap();
-        let logger = gelf::Logger::new(Box::new(backend)).unwrap();
+        let mut logger = gelf::Logger::new(Box::new(backend)).unwrap();
+
+        if let Some(cluster) = config.cluster.as_ref() {
+            logger.set_default_metadata(String::from("cluster"), cluster.clone());
+        }
 
         combined_logger.inner.push(Arc::new(logger));
     }

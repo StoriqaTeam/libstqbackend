@@ -25,6 +25,7 @@ pub type HyperClient = hyper::Client<HttpsConnector<hyper::client::HttpConnector
 pub struct Config {
     pub http_client_retries: usize,
     pub http_client_buffer_size: usize,
+    pub timeout_duration_ms: u64,
 }
 
 pub struct Client {
@@ -32,12 +33,14 @@ pub struct Client {
     tx: mpsc::Sender<Payload>,
     rx: mpsc::Receiver<Payload>,
     max_retries: usize,
+    timeout_duration_ms: u64,
     handle: Handle,
 }
 
 impl Client {
     pub fn new(config: &Config, handle: &Handle) -> Self {
         let max_retries = config.http_client_retries;
+        let timeout_duration_ms = config.timeout_duration_ms;
         let (tx, rx) = mpsc::channel::<Payload>(config.http_client_buffer_size);
         let client = hyper::Client::configure()
             .connector(HttpsConnector::new(4, &handle).unwrap())
@@ -48,14 +51,25 @@ impl Client {
             tx,
             rx,
             max_retries,
+            timeout_duration_ms,
             handle: handle.clone(),
         }
     }
 
     pub fn stream(self) -> Box<Stream<Item = (), Error = ()>> {
-        let Self { client, rx, handle, .. } = self;
+        let Self {
+            client,
+            rx,
+            handle,
+            timeout_duration_ms,
+            ..
+        } = self;
 
-        Box::new(rx.and_then(move |payload| Self::send_request(&handle, &client, payload).map(|_| ()).map_err(|_| ())))
+        Box::new(rx.and_then(move |payload| {
+            Self::send_request(&handle, &client, payload, timeout_duration_ms)
+                .map(|_| ())
+                .map_err(|_| ())
+        }))
     }
 
     pub fn handle(&self) -> ClientHandle {
@@ -65,7 +79,7 @@ impl Client {
         }
     }
 
-    fn send_request(handle: &Handle, client: &HyperClient, payload: Payload) -> Box<Future<Item = (), Error = ()>> {
+    fn send_request(handle: &Handle, client: &HyperClient, payload: Payload, timeout: u64) -> Box<Future<Item = (), Error = ()>> {
         let Payload {
             url,
             method,
@@ -97,8 +111,7 @@ impl Client {
             req.set_body(body.clone());
         }
 
-        // TODO: MOVE TO CONFIG
-        let timeout_duration = Duration::from_millis(5000);
+        let timeout_duration = Duration::from_millis(timeout);
 
         let timeout = match tokio_core::reactor::Timeout::new(timeout_duration, handle) {
             Ok(t) => t,
@@ -114,16 +127,16 @@ impl Client {
             Ok(Either::A((got, _timeout))) => Ok(got),
             Ok(Either::B((_timeout_error, _get))) => {
                 let message = format!(
-                    "Client timed out while connecting to {}, using method: {} after: 5 seconds.",
-                    url, method
+                    "Client timed out while connecting to {}, using method: {} after: {:?}.",
+                    url, method, timeout_duration
                 );
                 Err(hyper::Error::Io(io::Error::new(io::ErrorKind::TimedOut, message)))
             }
             Err(Either::A((get_error, _timeout))) => Err(get_error),
             Err(Either::B((timeout_error, _get))) => {
                 error!(
-                    "Timeout future error occured while connecting to {}, using method: {} after: 5 seconds.",
-                    url, method
+                    "Timeout future error occured while connecting to {}, using method: {} after: {:?}.",
+                    url, method, timeout_duration
                 );
                 Err(From::from(timeout_error))
             }

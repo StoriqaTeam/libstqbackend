@@ -40,6 +40,7 @@ macro_rules! uuid_newtype {
 }
 
 i32_newtype!(UserId);
+i32_newtype!(SessionId);
 i32_newtype!(ProductId);
 i32_newtype!(BaseProductId);
 i32_newtype!(Quantity);
@@ -61,7 +62,6 @@ uuid_newtype!(OrderInfoId);
 uuid_newtype!(CallbackId);
 uuid_newtype!(ConversionId);
 uuid_newtype!(WarehouseId);
-uuid_newtype!(SessionId);
 
 f64_newtype!(ProductPrice);
 

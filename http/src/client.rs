@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io;
 use std::mem;
 use std::time::Duration;
 
@@ -126,25 +125,24 @@ impl Client {
         let work = req_task.select2(timeout).then(move |res| match res {
             Ok(Either::A((got, _timeout))) => Ok(got),
             Ok(Either::B((_timeout_error, _get))) => {
-                let message = format!(
+                error!(
                     "Client timed out while connecting to {}, using method: {} after: {:?}.",
                     url, method, timeout_duration
                 );
-                Err(hyper::Error::Io(io::Error::new(io::ErrorKind::TimedOut, message)))
+                Err(Error::Timeout)
             }
-            Err(Either::A((get_error, _timeout))) => Err(get_error),
+            Err(Either::A((get_error, _timeout))) => Err(Error::Network(get_error)),
             Err(Either::B((timeout_error, _get))) => {
                 error!(
                     "Timeout future error occured while connecting to {}, using method: {} after: {:?}.",
                     url, method, timeout_duration
                 );
-                Err(From::from(timeout_error))
+                Err(Error::Network(From::from(timeout_error)))
             }
         });
 
-        let work_with_timeout = work
-            .map_err(Error::Network)
-            .and_then(move |res| {
+        let work_with_timeout =
+            work.and_then(move |res| {
                 let status = res.status();
                 let body_future: Box<Future<Item = String, Error = Error>> = Box::new(read_body(res.body()).map_err(Error::Network));
                 match status.as_u16() {
@@ -165,10 +163,9 @@ impl Client {
                         future::err(error)
                     })),
                 }
-            })
-            .then(|result| callback.send(result))
-            .map(|_| ())
-            .map_err(|_| ());
+            }).then(|result| callback.send(result))
+                .map(|_| ())
+                .map_err(|_| ());
 
         Box::new(work_with_timeout)
     }
@@ -315,6 +312,7 @@ struct Payload {
 pub enum Error {
     Api(hyper::StatusCode, Option<ErrorMessage>),
     Network(hyper::Error),
+    Timeout,
     Parse(String),
     Unknown(String),
 }
@@ -328,6 +326,7 @@ impl fmt::Display for Error {
                 status, error_message.code, error_message.description, error_message.payload
             ),
             Error::Api(status, None) => write!(f, "Http client 100: Api error: status: {}", status),
+            Error::Timeout => write!(f, "Http client 200: Network timeoout"),
             Error::Network(ref err) => write!(f, "Http client 200: Network error: {}", err),
             Error::Parse(ref err) => write!(f, "Http client 300: Parse error: {}", err),
             Error::Unknown(ref err) => write!(f, "Http client 400: Unknown error: {}", err),
@@ -365,6 +364,10 @@ impl Error {
             Error::Network(_) => FieldError::new(
                 "Network error for microservice",
                 graphql_value!({ "code": 200, "details": { "See server logs for details." }}),
+            ),
+            Error::Timeout => FieldError::new(
+                "Network timeout error for microservice",
+                graphql_value!({ "code": 200, "details": { "Client timeout expired." }}),
             ),
             Error::Parse(message) => FieldError::new("Unexpected parsing error", graphql_value!({ "code": 300, "details": { message }})),
             _ => FieldError::new(

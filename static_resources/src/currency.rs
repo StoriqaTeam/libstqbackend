@@ -1,49 +1,58 @@
-use std::fmt;
+use diesel::expression::bound::Bound;
+use diesel::expression::AsExpression;
+use diesel::pg::Pg;
+use diesel::row::Row;
+use diesel::serialize::Output;
+use diesel::sql_types::*;
+use diesel::types::{FromSqlRow, IsNull, ToSql};
+use diesel::Queryable;
+use juniper::FieldError;
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
+use std::io::Write;
+use std::str;
 use std::str::FromStr;
 
-use juniper::FieldError;
-
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, EnumIterator)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIterator, GraphQLEnum)]
 pub enum Currency {
-    Rouble = 1,
-    Euro,
-    Dollar,
-    Bitcoin,
-    Etherium,
-    Stq,
-}
-
-#[derive(GraphQLObject, Serialize, Deserialize, Debug)]
-pub struct CurrencyGraphQl {
-    pub key: i32,
-    pub name: String,
-}
-
-impl CurrencyGraphQl {
-    pub fn new(key: i32, name: String) -> Self {
-        Self { key, name }
-    }
+    RUB,
+    EUR,
+    USD,
+    BTC,
+    ETH,
+    STQ,
 }
 
 impl Currency {
-    pub fn as_vec() -> Vec<CurrencyGraphQl> {
-        Currency::enum_iter()
-            .map(|value| CurrencyGraphQl::new(value as i32, value.to_string()))
-            .collect()
+    pub fn code(&self) -> &'static str {
+        match self {
+            Currency::RUB => "RUB",
+            Currency::EUR => "EUR",
+            Currency::USD => "USD",
+            Currency::BTC => "BTC",
+            Currency::ETH => "ETH",
+            Currency::STQ => "STQ",
+        }
+    }
+
+    pub fn from_code(s: &str) -> Option<Self> {
+        Some(match s {
+            "RUB" => Currency::RUB,
+            "EUR" => Currency::EUR,
+            "USD" => Currency::USD,
+            "BTC" => Currency::BTC,
+            "ETH" => Currency::ETH,
+            "STQ" => Currency::STQ,
+            _ => {
+                return None;
+            }
+        })
     }
 }
 
-impl fmt::Display for Currency {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let currency = match *self {
-            Currency::Rouble => "rouble",
-            Currency::Euro => "euro",
-            Currency::Dollar => "dollar",
-            Currency::Bitcoin => "bitcoin",
-            Currency::Etherium => "etherium",
-            Currency::Stq => "stq",
-        };
-        write!(f, "{}", currency)
+impl Display for Currency {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        write!(fmt, "{}", self.code())
     }
 }
 
@@ -51,21 +60,51 @@ impl FromStr for Currency {
     type Err = FieldError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "rouble" => Currency::Rouble,
-            "euro" => Currency::Euro,
-            "dollar" => Currency::Dollar,
-            "bitcoin" => Currency::Bitcoin,
-            "etherium" => Currency::Etherium,
-            "stq" => Currency::Stq,
-            _ => {
-                return Err(FieldError::new(
-                    "Unknown Currency",
-                    graphql_value!({ "code": 300, "details": {
+        Self::from_code(s).ok_or_else(|| {
+            FieldError::new(
+                "Unknown Currency",
+                graphql_value!({ "code": 300, "details": {
                         format!("Can not resolve Currency name. Unknown Currency: '{}'", s)
                         }}),
-                ))
-            }
+            )
         })
+    }
+}
+
+impl NotNull for Currency {}
+impl SingleValue for Currency {}
+impl Queryable<VarChar, Pg> for Currency {
+    type Row = Currency;
+    fn build(row: Self::Row) -> Self {
+        row
+    }
+}
+impl AsExpression<VarChar> for Currency {
+    type Expression = Bound<VarChar, Currency>;
+    fn as_expression(self) -> Self::Expression {
+        Bound::new(self)
+    }
+}
+impl<'a> AsExpression<VarChar> for &'a Currency {
+    type Expression = Bound<VarChar, &'a Currency>;
+    fn as_expression(self) -> Self::Expression {
+        Bound::new(self)
+    }
+}
+impl ToSql<VarChar, Pg> for Currency {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> Result<IsNull, Box<Error + Send + Sync>> {
+        out.write_all(self.code().as_bytes())?;
+        Ok(IsNull::No)
+    }
+}
+impl FromSqlRow<VarChar, Pg> for Currency {
+    fn build_from_row<R: Row<Pg>>(row: &mut R) -> Result<Self, Box<Error + Send + Sync>> {
+        match row.take() {
+            Some(v) => {
+                let s = str::from_utf8(v).unwrap_or("unreadable value");
+                Self::from_code(s).ok_or_else(|| format!("Unrecognized enum variant: {:?}", s).into())
+            }
+            None => Err("Unexpected null for non-null column".into()),
+        }
     }
 }

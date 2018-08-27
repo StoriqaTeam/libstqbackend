@@ -1,8 +1,4 @@
-use std::fmt;
-
 use uuid::Uuid;
-
-use stq_static_resources::Currency;
 
 macro_rules! f64_newtype {
     ($x:ident) => {
@@ -62,33 +58,7 @@ uuid_newtype!(OrderInfoId);
 uuid_newtype!(CallbackId);
 uuid_newtype!(ConversionId);
 uuid_newtype!(WarehouseId);
+uuid_newtype!(CurrencyExchangeId);
 
 f64_newtype!(ProductPrice);
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into, Hash,
-         Serialize, Deserialize, DieselTypes)]
-pub struct CurrencyId(pub i32);
-
-impl fmt::Display for CurrencyId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self.0 {
-                x if x == Currency::Rouble as i32 => Currency::Rouble.to_string(),
-                x if x == Currency::Euro as i32 => Currency::Euro.to_string(),
-                x if x == Currency::Dollar as i32 => Currency::Dollar.to_string(),
-                x if x == Currency::Bitcoin as i32 => Currency::Bitcoin.to_string(),
-                x if x == Currency::Etherium as i32 => Currency::Etherium.to_string(),
-                x if x == Currency::Stq as i32 => Currency::Stq.to_string(),
-                _ => "unknown".to_string(),
-            }
-        )
-    }
-}
-
-impl<'a> From<&'a ProductPrice> for f64 {
-    fn from(p: &ProductPrice) -> f64 {
-        p.0
-    }
-}
+f64_newtype!(ExchangeRate);

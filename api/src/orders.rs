@@ -7,7 +7,7 @@ use geo::Point as GeoPoint;
 use regex::Regex;
 use std::collections::HashMap;
 use stq_roles;
-use stq_static_resources::OrderState;
+use stq_static_resources::{Currency, OrderState};
 use stq_types::*;
 use validator::{Validate, ValidationError};
 
@@ -350,7 +350,7 @@ pub struct Order {
     pub store: StoreId,
     pub product: ProductId,
     pub price: ProductPrice,
-    pub currency_id: CurrencyId,
+    pub currency: Currency,
     pub quantity: Quantity,
     pub address: AddressFull,
     pub receiver_name: String,

@@ -1,11 +1,12 @@
 use super::*;
 
 use std::collections::HashSet;
+use stq_static_resources::Currency;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ProductSellerPrice {
     pub price: ProductPrice,
-    pub currency_id: CurrencyId,
+    pub currency: Currency,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

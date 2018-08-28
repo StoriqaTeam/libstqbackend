@@ -3,7 +3,7 @@
 //! so TranslationInput and Translation were created.
 use std::fmt;
 
-#[derive(GraphQLEnum, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(GraphQLEnum, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, EnumIterator)]
 #[graphql(name = "Language", description = "Applicable Languages")]
 #[serde(rename_all = "lowercase")]
 pub enum Language {
@@ -46,23 +46,11 @@ impl fmt::Display for Language {
 
 impl Language {
     pub fn as_vec() -> Vec<LanguageGraphQl> {
-        vec![
-            Language::En,
-            Language::Ch,
-            Language::De,
-            Language::Ru,
-            Language::Es,
-            Language::Fr,
-            Language::Ko,
-            Language::Po,
-            Language::Ja,
-        ].into_iter()
-            .map(|value| LanguageGraphQl::new(value.to_string()))
-            .collect()
+        Language::enum_iter().map(|value| LanguageGraphQl::new(value.to_string())).collect()
     }
 }
 
-#[derive(GraphQLInputObject, Serialize, Clone, Debug, PartialEq)]
+#[derive(GraphQLInputObject, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[graphql(description = "Text with language")]
 pub struct TranslationInput {
     #[graphql(description = "Language")]
@@ -71,7 +59,7 @@ pub struct TranslationInput {
     pub text: String,
 }
 
-#[derive(GraphQLObject, Deserialize, Clone, Debug, PartialEq)]
+#[derive(GraphQLObject, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[graphql(description = "Text with language")]
 pub struct Translation {
     #[graphql(description = "Language")]

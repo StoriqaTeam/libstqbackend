@@ -13,6 +13,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate stq_roles;
+extern crate stq_router;
 extern crate stq_static_resources;
 extern crate stq_types;
 extern crate tokio_core;

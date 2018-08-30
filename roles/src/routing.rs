@@ -7,7 +7,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::rc::Rc;
 use stq_http::controller::ControllerFuture;
 use stq_http::request_util::*;
-use stq_router::RouteParser;
+use stq_router::Builder as RouterBuilder;
 use stq_types::*;
 
 #[derive(Clone, Debug)]
@@ -17,25 +17,23 @@ pub enum Route {
     RolesByUserId(UserId),
 }
 
-pub fn add_routes<R>(mut route_parser: RouteParser<R>) -> RouteParser<R>
+pub fn add_routes<R>(b: RouterBuilder<R>) -> RouterBuilder<R>
 where
     R: From<Route>,
 {
-    route_parser.add_route(r"^/roles$", || Route::Roles.into());
-    route_parser.add_route_with_params(r"^/roles/by-user-id/(\d+)$", |params| {
-        params
-            .get(0)
-            .and_then(|string_id| string_id.parse().ok())
-            .map(|v| Route::RolesByUserId(v).into())
-    });
-    route_parser.add_route_with_params(r"^/roles/by-id/([a-zA-Z0-9-]+)$", |params| {
-        params
-            .get(0)
-            .and_then(|string_id| string_id.parse().ok())
-            .map(|v| Route::RoleById(v).into())
-    });
-
-    route_parser
+    b.with_route(r"^/roles$", |_| Some(Route::Roles.into()))
+        .with_route(r"^/roles/by-user-id/(\d+)$", |params| {
+            params
+                .get(0)
+                .and_then(|string_id| string_id.parse().ok())
+                .map(|v| Route::RolesByUserId(v).into())
+        })
+        .with_route(r"^/roles/by-id/([a-zA-Z0-9-]+)$", |params| {
+            params
+                .get(0)
+                .and_then(|string_id| string_id.parse().ok())
+                .map(|v| Route::RoleById(v).into())
+        })
 }
 
 pub struct Controller<T> {

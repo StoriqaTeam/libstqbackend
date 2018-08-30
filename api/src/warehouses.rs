@@ -5,6 +5,7 @@ use util::*;
 use geo::Point as GeoPoint;
 use std::collections::HashMap;
 use stq_roles;
+use stq_router::{Builder as RouterBuilder, Router};
 use stq_types::*;
 
 #[derive(Clone, Debug)]
@@ -73,6 +74,65 @@ impl RouteBuilder for Route {
             StockById { stock_id } => format!("stocks/by-id/{}", stock_id),
             Roles(route) => route.route(),
         }
+    }
+}
+
+impl Route {
+    pub fn from_path(s: &str) -> Option<Self> {
+        lazy_static! {
+            static ref ROUTER: Router<Route> = stq_roles::routing::add_routes(
+                RouterBuilder::default()
+            ).with_route(r"^/warehouses$", |_| Some(
+                Route::Warehouses
+            ))
+                .with_route(r"^/warehouses/by-id/([a-zA-Z0-9-]+)/products$", |params| {
+                    params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok())
+                        .map(|warehouse_id| Route::StocksInWarehouse { warehouse_id })
+                })
+                .with_route(
+                    r"^/warehouses/by-id/([a-zA-Z0-9-]+)/products/(\d+)$",
+                    |params| {
+                        if let Some(warehouse_id_s) = params.get(0) {
+                            if let Some(product_id_s) = params.get(1) {
+                                if let Ok(warehouse_id) = warehouse_id_s.parse().map(WarehouseId) {
+                                    if let Ok(product_id) = product_id_s.parse().map(ProductId) {
+                                        return Some(Route::StockInWarehouse {
+                                            warehouse_id,
+                                            product_id,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        None
+                    }
+                )
+                .with_route(r"^/warehouses/by-id/([a-zA-Z0-9-]+)$", |params| params
+                    .get(0)
+                    .and_then(|string_id| string_id.parse().ok().map(WarehouseIdentifier::Id))
+                    .map(|warehouse_id| Route::Warehouse { warehouse_id }))
+                .with_route(r"^/warehouses/by-slug/([a-zA-Z0-9-]+)$", |params| params
+                    .get(0)
+                    .and_then(|string_id| string_id.parse().ok().map(WarehouseIdentifier::Slug))
+                    .map(|warehouse_id| Route::Warehouse { warehouse_id }))
+                .with_route(r"^/warehouses/by-store/(\d+)$", |params| params
+                    .get(0)
+                    .and_then(|string_id| string_id.parse().ok())
+                    .map(|store_id| Route::WarehousesByStore { store_id }))
+                .with_route(r"^/stocks/by-product-id/(\d+)$", |params| params
+                    .get(0)
+                    .and_then(|string_id| string_id.parse().ok())
+                    .map(|product_id| Route::StocksByProductId { product_id }))
+                .with_route(r"^/stocks/by-id/([a-zA-Z0-9-]+)$", |params| params
+                    .get(0)
+                    .and_then(|string_id| string_id.parse().ok())
+                    .map(|stock_id| Route::StockById { stock_id }))
+                .build();
+        }
+
+        ROUTER.test(s)
     }
 }
 

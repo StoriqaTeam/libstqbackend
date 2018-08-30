@@ -42,8 +42,12 @@ i32_newtype!(BaseProductId);
 i32_newtype!(Quantity);
 i32_newtype!(StoreId);
 i32_newtype!(OrderSlug);
+i32_newtype!(CompanyPackageId);
+i32_newtype!(CompanyId);
+i32_newtype!(PackageId);
 
 string_newtype!(WarehouseSlug);
+string_newtype!(CountryLabel);
 
 uuid_newtype!(RoleEntryId);
 uuid_newtype!(RoleId);

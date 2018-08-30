@@ -41,6 +41,7 @@ pub fn derive_diesel_types(input: proc_macro::TokenStream) -> proc_macro::TokenS
             use diesel::types::{FromSqlRow, IsNull, ToSql};
             use diesel::sql_types::*;
             use diesel::Queryable;
+            use diesel::backend::Backend;
 
             use super::#name;
 
@@ -109,6 +110,13 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
                                 impl FromSqlRow<#diesel_type, Pg> for #name {
                                     fn build_from_row<T: Row<Pg>>(row: &mut T) -> Result<Self, Box<Error + Send + Sync>> {
                                         FromSql::<#diesel_type, Pg>::from_sql(row.take()).map(#name)
+                                    }
+                                }
+
+                                impl FromSql<#diesel_type, Pg> for #name
+                                {
+                                    fn from_sql(raw: Option<&<Pg as Backend>::RawValue>) -> Result<Self, Box<Error + Send + Sync>> {
+                                        FromSql::<#diesel_type, Pg>::from_sql(raw).map(#name)
                                     }
                                 }
 

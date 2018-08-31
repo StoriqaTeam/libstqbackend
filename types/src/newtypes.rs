@@ -48,6 +48,7 @@ i32_newtype!(PackageId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
+string_newtype!(PageSlug);
 
 uuid_newtype!(RoleEntryId);
 uuid_newtype!(RoleId);
@@ -63,6 +64,7 @@ uuid_newtype!(CallbackId);
 uuid_newtype!(ConversionId);
 uuid_newtype!(WarehouseId);
 uuid_newtype!(CurrencyExchangeId);
+uuid_newtype!(PageId);
 
 f64_newtype!(ProductPrice);
 f64_newtype!(ExchangeRate);

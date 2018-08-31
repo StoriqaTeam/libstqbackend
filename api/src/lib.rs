@@ -23,6 +23,7 @@ extern crate validator_derive;
 
 pub mod errors;
 pub mod orders;
+pub mod pages;
 pub mod roles;
 pub mod rpc_client;
 pub mod types;

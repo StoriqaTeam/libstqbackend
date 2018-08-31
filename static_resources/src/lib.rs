@@ -15,7 +15,6 @@ extern crate postgres_protocol;
 
 pub mod attribute_type;
 pub mod currency;
-pub mod delivery;
 pub mod emails;
 pub mod language;
 pub mod moderation_status;
@@ -23,7 +22,6 @@ pub mod order_status;
 
 pub use attribute_type::*;
 pub use currency::Currency;
-pub use delivery::*;
 pub use emails::*;
 pub use language::*;
 pub use moderation_status::*;

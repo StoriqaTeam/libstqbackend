@@ -217,6 +217,16 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
                         }
                     }
                 }
+                impl FromSql<VarChar, Pg> for #name
+                {
+                    fn from_sql(raw: Option<&<Pg as Backend>::RawValue>) -> Result<Self, Box<Error + Send + Sync>> {
+                        match raw {
+                            #(Some(#variants_db) => Ok(#variants_rs),)*
+                            Some(v) => Err(format!("Unrecognized enum variant: {:?}", str::from_utf8(v).unwrap_or("unreadable value")).to_string().into()),
+                            None => Err("Unexpected null for non-null column".into()),
+                        }
+                    }
+                }
             }
         }
         Data::Union(_) => unimplemented!(),

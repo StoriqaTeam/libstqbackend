@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SimpleMail {
     pub to: String,
@@ -167,14 +169,14 @@ impl Email for ApplyEmailVerificationForUser {
 #[derive(GraphQLEnum, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Debug, DieselTypes)]
 #[graphql(name = "TemplateVariant", description = "Template variant")]
 pub enum TemplateVariant {
-    #[graphql(description = "order update state for user.")]
-    OrderUpdateStateForUser,
-    #[graphql(description = "order update state for store.")]
-    OrderUpdateStateForStore,
     #[graphql(description = "order create for user.")]
     OrderCreateForUser,
+    #[graphql(description = "order update state for user.")]
+    OrderUpdateStateForUser,
     #[graphql(description = "order create for store.")]
     OrderCreateForStore,
+    #[graphql(description = "order update state for store.")]
+    OrderUpdateStateForStore,
     #[graphql(description = "email verification.")]
     EmailVerificationForUser,
     #[graphql(description = "password reset.")]
@@ -183,4 +185,21 @@ pub enum TemplateVariant {
     ApplyPasswordResetForUser,
     #[graphql(description = "apply email verification.")]
     ApplyEmailVerificationForUser,
+}
+
+impl FromStr for TemplateVariant {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "order_create_for_user" => Ok(TemplateVariant::OrderCreateForUser),
+            "order_update_state_for_user" => Ok(TemplateVariant::OrderUpdateStateForUser),
+            "order_create_for_store" => Ok(TemplateVariant::OrderCreateForStore),
+            "order_update_state_for_store" => Ok(TemplateVariant::OrderUpdateStateForStore),
+            "email_verification_for_user" => Ok(TemplateVariant::EmailVerificationForUser),
+            "password_reset_for_user" => Ok(TemplateVariant::PasswordResetForUser),
+            "apply_password_reset_for_user" => Ok(TemplateVariant::ApplyPasswordResetForUser),
+            "apply_email_verification_for_user" => Ok(TemplateVariant::ApplyEmailVerificationForUser),
+            _ => Err(()),
+        }
+    }
 }

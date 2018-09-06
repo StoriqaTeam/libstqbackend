@@ -49,6 +49,8 @@ i32_newtype!(PackageId);
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
 string_newtype!(PageSlug);
+string_newtype!(Alpha2);
+string_newtype!(Alpha3);
 
 uuid_newtype!(RoleEntryId);
 uuid_newtype!(RoleId);

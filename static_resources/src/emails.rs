@@ -1,3 +1,4 @@
+use std::fmt;
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -200,6 +201,21 @@ impl FromStr for TemplateVariant {
             "apply_password_reset_for_user" => Ok(TemplateVariant::ApplyPasswordResetForUser),
             "apply_email_verification_for_user" => Ok(TemplateVariant::ApplyEmailVerificationForUser),
             _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for TemplateVariant {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            TemplateVariant::OrderCreateForUser => write!(f, "order_create_for_user"),
+            TemplateVariant::OrderUpdateStateForUser => write!(f, "order_update_state_for_user"),
+            TemplateVariant::OrderCreateForStore => write!(f, "order_create_for_store"),
+            TemplateVariant::OrderUpdateStateForStore => write!(f, "order_update_state_for_store"),
+            TemplateVariant::EmailVerificationForUser => write!(f, "email_verification_for_user"),
+            TemplateVariant::PasswordResetForUser => write!(f, "password_reset_for_user"),
+            TemplateVariant::ApplyPasswordResetForUser => write!(f, "apply_password_reset_for_user"),
+            TemplateVariant::ApplyEmailVerificationForUser => write!(f, "apply_email_verification_for_user"),
         }
     }
 }

@@ -414,11 +414,11 @@ impl Route {
                     .get(0)
                     .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
                     .map(|order_id| Route::OrderStatus { order_id }))
-                .with_route(r"^/order_diff/by-id/([a-zA-Z0-9-]+)$", |params| params
+                .with_route(r"^/order_diffs/by-id/([a-zA-Z0-9-]+)$", |params| params
                     .get(0)
                     .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
                     .map(|order_id| Route::OrderDiff { order_id }))
-                .with_route(r"^/order_diff/by-slug/(\d+)$", |params| params
+                .with_route(r"^/order_diffs/by-slug/(\d+)$", |params| params
                     .get(0)
                     .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
                     .map(|order_id| Route::OrderDiff { order_id }))

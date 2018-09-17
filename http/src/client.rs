@@ -18,7 +18,9 @@ use tokio_core::reactor::Handle;
 use errors::ErrorMessage;
 use request_util::read_body;
 
+// Todo remove pub, new hyper
 pub type ClientResult = Result<String, Error>;
+// Todo remove pub
 pub type HyperClient = hyper::Client<HttpsConnector<hyper::client::HttpConnector>>;
 
 pub struct Config {
@@ -334,6 +336,7 @@ impl fmt::Display for Error {
     }
 }
 
+/// TODO: MOVE TO GATEWAY
 impl Error {
     pub fn into_graphql(self) -> FieldError {
         match self {

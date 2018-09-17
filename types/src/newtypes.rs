@@ -2,29 +2,89 @@ use uuid::Uuid;
 
 macro_rules! f64_newtype {
     ($x:ident) => {
-        #[derive(Clone, Copy, Debug, Display, Default, PartialEq, PartialOrd, From, FromStr,
-                 Into, Serialize, Deserialize, DieselTypes)]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Display,
+            Default,
+            PartialEq,
+            PartialOrd,
+            From,
+            FromStr,
+            Into,
+            Serialize,
+            Deserialize,
+            DieselTypes,
+        )]
         pub struct $x(pub f64);
     };
 }
 macro_rules! i32_newtype {
     ($x:ident) => {
-        #[derive(Clone, Copy, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From,
-                 FromStr, Into, Hash, Serialize, Deserialize, DieselTypes)]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Display,
+            Default,
+            PartialEq,
+            Eq,
+            PartialOrd,
+            Ord,
+            From,
+            FromStr,
+            Into,
+            Hash,
+            Serialize,
+            Deserialize,
+            DieselTypes,
+        )]
         pub struct $x(pub i32);
     };
 }
 macro_rules! string_newtype {
     ($x:ident) => {
-        #[derive(Clone, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr,
-                 Into, Hash, Serialize, Deserialize, DieselTypes)]
+        #[derive(
+            Clone,
+            Debug,
+            Display,
+            Default,
+            PartialEq,
+            Eq,
+            PartialOrd,
+            Ord,
+            From,
+            FromStr,
+            Into,
+            Hash,
+            Serialize,
+            Deserialize,
+            DieselTypes,
+        )]
         pub struct $x(pub String);
     };
 }
 macro_rules! uuid_newtype {
     ($x:ident) => {
-        #[derive(Clone, Copy, Debug, Default, Display, PartialEq, Eq, PartialOrd, Ord, From,
-                 FromStr, Into, Hash, Serialize, Deserialize, DieselTypes)]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Default,
+            Display,
+            PartialEq,
+            Eq,
+            PartialOrd,
+            Ord,
+            From,
+            FromStr,
+            Into,
+            Hash,
+            Serialize,
+            Deserialize,
+            DieselTypes,
+        )]
         pub struct $x(pub Uuid);
 
         impl $x {

@@ -6,13 +6,43 @@ use std::fmt;
 pub enum StoresRole {
     Superuser,
     User,
-    StoreManager,
+    Moderator,
+    PlatformAdmin,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
 pub enum UsersRole {
     Superuser,
     User,
+    Moderator,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+pub enum BillingRole {
+    Superuser,
+    User,
+    StoreManager,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+pub enum DeliveryRole {
+    Superuser,
+    User,
+    StoreManager,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+pub enum OrderRole {
+    Superuser,
+    User,
+    StoreManager,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+pub enum WarehouseRole {
+    Superuser,
+    User,
+    StoreManager,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]

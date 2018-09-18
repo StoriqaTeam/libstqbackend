@@ -200,7 +200,30 @@ fn get_diesel_impls(data: &Data, name: &Ident) -> proc_macro2::TokenStream {
                         Bound::new(self)
                     }
                 }
+                impl<'a> AsExpression<Nullable<VarChar>> for &'a #name {
+                    type Expression = Bound<Nullable<VarChar>, &'a #name>;
+
+                    fn as_expression(self) -> Self::Expression {
+                        Bound::new(self)
+                    }
+                }
+
+                impl AsExpression<Nullable<VarChar>> for #name {
+                    type Expression = Bound<Nullable<VarChar>, #name>;
+
+                    fn as_expression(self) -> Self::Expression {
+                        Bound::new(self)
+                    }
+                }
                 impl ToSql<VarChar, Pg> for #name {
+                    fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> Result<IsNull, Box<Error + Send + Sync>> {
+                        match *self {
+                            #(#variants_rs => out.write_all(#variants_db)?,)*
+                        }
+                        Ok(IsNull::No)
+                    }
+                }
+                impl ToSql<Nullable<VarChar>, Pg> for #name {
                     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> Result<IsNull, Box<Error + Send + Sync>> {
                         match *self {
                             #(#variants_rs => out.write_all(#variants_db)?,)*

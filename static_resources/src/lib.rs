@@ -21,6 +21,7 @@ pub mod language;
 pub mod moderation_status;
 pub mod order_status;
 pub mod provider;
+pub mod token_type;
 
 pub use attribute_type::*;
 pub use currency::Currency;
@@ -30,3 +31,4 @@ pub use language::*;
 pub use moderation_status::*;
 pub use order_status::*;
 pub use provider::*;
+pub use token_type::*;

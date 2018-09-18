@@ -36,11 +36,6 @@ impl fmt::Display for ModerationStatus {
 
 impl ModerationStatus {
     pub fn as_vec() -> Vec<ModerationStatus> {
-        vec![
-            ModerationStatus::Draft,
-            ModerationStatus::Moderation,
-            ModerationStatus::Decline,
-            ModerationStatus::Published,
-        ]
+        ModerationStatus::enum_iter().collect()
     }
 }

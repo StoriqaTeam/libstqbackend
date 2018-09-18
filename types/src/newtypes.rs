@@ -2,21 +2,7 @@ use uuid::Uuid;
 
 macro_rules! f64_newtype {
     ($x:ident) => {
-        #[derive(
-            Clone,
-            Copy,
-            Debug,
-            Display,
-            Default,
-            PartialEq,
-            PartialOrd,
-            From,
-            FromStr,
-            Into,
-            Serialize,
-            Deserialize,
-            DieselTypes,
-        )]
+        #[derive(Clone, Copy, Debug, Display, Default, PartialEq, PartialOrd, From, FromStr, Into, Serialize, Deserialize, DieselTypes)]
         pub struct $x(pub f64);
     };
 }
@@ -46,21 +32,7 @@ macro_rules! i32_newtype {
 macro_rules! string_newtype {
     ($x:ident) => {
         #[derive(
-            Clone,
-            Debug,
-            Display,
-            Default,
-            PartialEq,
-            Eq,
-            PartialOrd,
-            Ord,
-            From,
-            FromStr,
-            Into,
-            Hash,
-            Serialize,
-            Deserialize,
-            DieselTypes,
+            Clone, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into, Hash, Serialize, Deserialize, DieselTypes,
         )]
         pub struct $x(pub String);
     };

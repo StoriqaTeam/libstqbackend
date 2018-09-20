@@ -441,6 +441,8 @@ pub type CartProductCommentPayload = SetterPayload<String>;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CartProductIncrementPayload {
     pub store_id: StoreId,
+    pub pre_order: bool,
+    pub pre_order_days: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -459,6 +461,8 @@ pub trait CartClient {
         customer: CartCustomer,
         product_id: ProductId,
         store_id: StoreId,
+        pre_order: bool,
+        pre_order_days: i32,
     ) -> ApiFuture<Cart>;
     /// Set item to desired quantity in user's cart
     fn set_quantity(
@@ -504,14 +508,19 @@ impl CartClient for RestApiClient {
         customer: CartCustomer,
         product_id: ProductId,
         store_id: StoreId,
+        pre_order: bool,
+        pre_order_days: i32,
     ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
                 .post(&self.build_route(&Route::CartIncrementProduct {
                     customer,
                     product_id,
-                }))
-                .body(JsonPayload(&CartProductIncrementPayload { store_id })),
+                })).body(JsonPayload(&CartProductIncrementPayload {
+                    store_id,
+                    pre_order,
+                    pre_order_days,
+                })),
         )
     }
 
@@ -526,8 +535,7 @@ impl CartClient for RestApiClient {
                 .put(&self.build_route(&Route::CartProductQuantity {
                     customer,
                     product_id,
-                }))
-                .body(JsonPayload(&CartProductQuantityPayload { value })),
+                })).body(JsonPayload(&CartProductQuantityPayload { value })),
         )
     }
 
@@ -542,8 +550,7 @@ impl CartClient for RestApiClient {
                 .put(&self.build_route(&Route::CartProductSelection {
                     customer,
                     product_id,
-                }))
-                .body(JsonPayload(&CartProductSelectionPayload { value })),
+                })).body(JsonPayload(&CartProductSelectionPayload { value })),
         )
     }
 
@@ -558,8 +565,7 @@ impl CartClient for RestApiClient {
                 .put(&self.build_route(&Route::CartProductComment {
                     customer,
                     product_id,
-                }))
-                .body(JsonPayload(&CartProductCommentPayload { value })),
+                })).body(JsonPayload(&CartProductCommentPayload { value })),
         )
     }
 
@@ -634,6 +640,8 @@ pub struct Order {
     pub track_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub pre_order: bool,
+    pub pre_order_days: i32,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {

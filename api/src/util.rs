@@ -20,8 +20,7 @@ fn read_body(body: Decoder) -> Box<Future<Item = String, Error = Error> + Send> 
             .fold(Vec::new(), |mut acc, chunk| {
                 acc.extend_from_slice(&*chunk);
                 future::ok::<_, Error>(acc)
-            })
-            .and_then(|bytes| match String::from_utf8(bytes) {
+            }).and_then(|bytes| match String::from_utf8(bytes) {
                 Ok(data) => future::ok(data),
                 Err(err) => future::err(Error::Parse(format!(
                     "Failed to parse data as string: {}",
@@ -47,8 +46,7 @@ where
                 }
 
                 Error::Unknown(format!("{:?}", e))
-            })
-            .and_then(|mut rsp| {
+            }).and_then(|mut rsp| {
                 let status = rsp.status();
                 match status.as_u16() {
                     200...299 => Box::new(

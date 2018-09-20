@@ -31,9 +31,8 @@ impl RestApiClient {
                             )],
                             None => vec![],
                         }.into_iter()
-                            .collect::<HeaderMap>(),
-                    )
-                    .build()
+                        .collect::<HeaderMap>(),
+                    ).build()
                     .unwrap(),
             ),
         }

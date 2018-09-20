@@ -390,8 +390,7 @@ impl WarehouseClient for RestApiClient {
                 .put(&self.build_route(&Route::StockInWarehouse {
                     warehouse_id,
                     product_id,
-                }))
-                .body(JsonPayload(StockSetPayload { quantity })),
+                })).body(JsonPayload(StockSetPayload { quantity })),
         )
     }
     fn get_product_in_warehouse(

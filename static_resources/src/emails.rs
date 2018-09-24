@@ -140,6 +140,7 @@ impl Email for PasswordResetForUser {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ApplyPasswordResetForUser {
     pub user: EmailUser,
+    pub cluster_url: String,
 }
 
 impl Email for ApplyPasswordResetForUser {

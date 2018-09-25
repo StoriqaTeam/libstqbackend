@@ -84,6 +84,10 @@ string_newtype!(PageSlug);
 string_newtype!(Alpha2);
 string_newtype!(Alpha3);
 
+pub mod stripe {
+    string_newtype!(SourceId);
+}
+
 uuid_newtype!(RoleEntryId);
 uuid_newtype!(RoleId);
 uuid_newtype!(StockId);

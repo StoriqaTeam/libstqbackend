@@ -7,6 +7,6 @@ derive_more = "0.11"
 diesel = { version = "1.3.3" }
 serde = "1.0"
 serde_derive = "1.0"
-uuid = { version = "*", features = ["use_std", "v4", "serde"] }
+uuid = { version = "0.6", features = ["use_std", "v4", "serde"] }
 stq_diesel_macro_derive = { path = "../diesel_macro_derive" }
 stq_static_resources = { path = "../static_resources" }

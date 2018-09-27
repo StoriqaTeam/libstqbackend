@@ -9,6 +9,7 @@ use juniper::FieldError;
 #[derive(Clone, Copy, Debug, EnumIterator, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Model {
     Attribute,
+    CustomAttribute,
     BaseProduct,
     Cart,
     CartProduct,
@@ -41,6 +42,7 @@ impl fmt::Display for Model {
             "{}",
             match *self {
                 Model::Attribute => "attribute",
+                Model::CustomAttribute => "custom_attribute",
                 Model::BaseProduct => "base_product",
                 Model::Cart => "cart",
                 Model::CartProduct => "cart_product",
@@ -75,6 +77,7 @@ impl FromStr for Model {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "attribute" => Ok(Model::Attribute),
+            "custom_attribute" => Ok(Model::CustomAttribute),
             "base_product" => Ok(Model::BaseProduct),
             "cart_product" => Ok(Model::CartProduct),
             "cart_store" => Ok(Model::CartStore),
@@ -112,6 +115,7 @@ impl Model {
     pub fn to_url(&self) -> String {
         match *self {
             Model::Attribute => "attributes".to_string(),
+            Model::CustomAttribute => "custom_attributes".to_string(),
             Model::BaseProduct => "base_products".to_string(),
             Model::Cart => "cart".to_string(),
             Model::CartProduct => "cart_products".to_string(),

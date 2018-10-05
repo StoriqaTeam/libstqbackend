@@ -77,6 +77,7 @@ i32_newtype!(OrderSlug);
 i32_newtype!(CompanyPackageId);
 i32_newtype!(CompanyId);
 i32_newtype!(PackageId);
+i32_newtype!(CustomAttributeId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);

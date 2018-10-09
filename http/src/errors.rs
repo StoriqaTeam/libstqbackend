@@ -11,7 +11,7 @@ pub trait PayloadCarrier {
     fn payload(&self) -> Option<Value>;
 }
 
-pub(crate) struct ErrorMessageWrapper<E: Fail + Codeable> {
+pub struct ErrorMessageWrapper<E: Fail + Codeable> {
     pub inner: ErrorMessage,
     _type: std::marker::PhantomData<E>,
 }

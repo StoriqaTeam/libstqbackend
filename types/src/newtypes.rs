@@ -78,12 +78,14 @@ i32_newtype!(CompanyPackageId);
 i32_newtype!(CompanyId);
 i32_newtype!(PackageId);
 i32_newtype!(CustomAttributeId);
+i32_newtype!(AttributeId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
 string_newtype!(PageSlug);
 string_newtype!(Alpha2);
 string_newtype!(Alpha3);
+string_newtype!(AttributeValue);
 
 pub mod stripe {
     string_newtype!(SourceId);

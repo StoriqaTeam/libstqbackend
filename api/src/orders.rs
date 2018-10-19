@@ -45,6 +45,7 @@ pub enum Route {
     },
     CartMerge,
     OrderFromCart,
+    OrderFromBuyNow,
     OrderFromCartRevert,
     OrderSearch,
     Orders,
@@ -141,6 +142,7 @@ impl RouteBuilder for Route {
             CartClear { customer } => format!("cart/{}/clear", cart_customer_route(customer)),
             CartMerge => "cart/merge".to_string(),
             OrderFromCart => "orders/create_from_cart".to_string(),
+            OrderFromBuyNow => "orders/create_buy_now".to_string(),
             OrderFromCartRevert => "orders/create_from_cart/revert".to_string(),
             OrderSearch => "orders/search".to_string(),
             Orders => "orders".to_string(),
@@ -389,6 +391,9 @@ impl Route {
                 .with_route(r"^/orders$", |_| Some(Route::Orders))
                 .with_route(r"^/orders/create_from_cart$", |_| Some(
                     Route::OrderFromCart
+                ))
+                .with_route(r"^/orders/create_buy_now$", |_| Some(
+                    Route::OrderFromBuyNow
                 ))
                 .with_route(r"^/orders/create_from_cart/revert$", |_| Some(
                     Route::OrderFromCartRevert
@@ -672,6 +677,29 @@ pub struct ConvertCartPayload {
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Validate)]
+pub struct BuyNow {
+    pub product_id: ProductId,
+    pub customer_id: UserId,
+    pub store_id: StoreId,
+    pub address: AddressFull,
+    pub receiver_name: String,
+    pub price: ProductSellerPrice,
+    pub quantity: Quantity,
+    pub currency: Currency,
+    #[validate(custom = "validate_phone")]
+    pub receiver_phone: String,
+    pub pre_order: bool,
+    pub pre_order_days: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct BuyNowPayload {
+    pub conversion_id: Option<ConversionId>,
+    #[serde(flatten)]
+    pub buy_now: BuyNow,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConvertCartRevertPayload {
     pub conversion_id: ConversionId,
@@ -707,6 +735,11 @@ pub trait OrderClient {
         address: AddressFull,
         receiver_name: String,
         receiver_phone: String,
+    ) -> ApiFuture<Vec<Order>>;
+    fn create_buy_now(
+        &self,
+        payload: BuyNow,
+        conversion_id: Option<ConversionId>,
     ) -> ApiFuture<Vec<Order>>;
     fn revert_cart_conversion(&self, conversion_id: ConversionId) -> ApiFuture<()>;
     fn get_order(&self, id: OrderIdentifier) -> ApiFuture<Option<Order>>;
@@ -755,6 +788,22 @@ impl OrderClient for RestApiClient {
                 })),
         )
     }
+
+    fn create_buy_now(
+        &self,
+        buy_now: BuyNow,
+        conversion_id: Option<ConversionId>,
+    ) -> ApiFuture<Vec<Order>> {
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::OrderFromBuyNow))
+                .body(JsonPayload(BuyNowPayload {
+                    conversion_id,
+                    buy_now,
+                })),
+        )
+    }
+
     fn revert_cart_conversion(&self, conversion_id: ConversionId) -> ApiFuture<()> {
         http_req(
             self.http_client

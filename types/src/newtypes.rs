@@ -80,6 +80,7 @@ i32_newtype!(PackageId);
 i32_newtype!(CustomAttributeId);
 i32_newtype!(AttributeId);
 i32_newtype!(CategoryId);
+i32_newtype!(CouponId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
@@ -87,7 +88,7 @@ string_newtype!(PageSlug);
 string_newtype!(Alpha2);
 string_newtype!(Alpha3);
 string_newtype!(AttributeValue);
-string_newtype!(CouponId);
+string_newtype!(CouponCode);
 
 pub mod stripe {
     string_newtype!(SourceId);

@@ -703,11 +703,13 @@ pub struct ConvertCartRevertPayload {
     pub conversion_id: ConversionId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct OrderSearchTerms {
     pub slug: Option<OrderSlug>,
     pub created_from: Option<DateTime<Utc>>,
     pub created_to: Option<DateTime<Utc>>,
+    pub updated_from: Option<DateTime<Utc>>,
+    pub updated_to: Option<DateTime<Utc>>,
     pub payment_status: Option<bool>,
     pub customer: Option<UserId>,
     pub store: Option<StoreId>,

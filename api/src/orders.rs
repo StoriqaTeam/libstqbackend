@@ -3,7 +3,6 @@ use types::*;
 use util::*;
 
 use chrono::prelude::*;
-use geo::Point as GeoPoint;
 use regex::Regex;
 use std::collections::HashMap;
 use stq_roles;
@@ -611,7 +610,6 @@ impl CartClient for RestApiClient {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct AddressFull {
-    pub location: Option<GeoPoint<f64>>,
     pub administrative_area_level_1: Option<String>,
     pub administrative_area_level_2: Option<String>,
     pub country: Option<String>,
@@ -705,11 +703,13 @@ pub struct ConvertCartRevertPayload {
     pub conversion_id: ConversionId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct OrderSearchTerms {
     pub slug: Option<OrderSlug>,
     pub created_from: Option<DateTime<Utc>>,
     pub created_to: Option<DateTime<Utc>>,
+    pub updated_from: Option<DateTime<Utc>>,
+    pub updated_to: Option<DateTime<Utc>>,
     pub payment_status: Option<bool>,
     pub customer: Option<UserId>,
     pub store: Option<StoreId>,

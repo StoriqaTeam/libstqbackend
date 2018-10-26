@@ -310,6 +310,44 @@ impl Route {
                     }
                 )
                 .with_route(
+                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/coupon/(\d+)$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                        Some(Route::AddCartCoupon {
+                            customer,
+                            product_id,
+                            coupon_id,
+                        })
+                    }
+                )
+                .with_route(
+                    r"^/cart/by-session/([a-zA-Z0-9-]+)/coupons/(\d+)$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                        Some(Route::DeleteCartCoupon {
+                            customer,
+                            coupon_id,
+                        })
+                    }
+                )
+                .with_route(
+                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/coupons$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        Some(Route::DeleteCartCouponByProduct {
+                            customer,
+                            product_id,
+                        })
+                    }
+                )
+                .with_route(
                     r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/increment$",
                     |params| {
                         let mut params = params.into_iter();

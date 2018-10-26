@@ -787,6 +787,7 @@ pub struct Order {
     pub updated_at: DateTime<Utc>,
     pub pre_order: bool,
     pub pre_order_days: i32,
+    pub coupon_id: Option<CouponId>,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {

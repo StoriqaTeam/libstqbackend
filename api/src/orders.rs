@@ -23,6 +23,15 @@ pub enum Route {
         customer: CartCustomer,
         product_id: ProductId,
     },
+    AddCartCoupon {
+        customer: CartCustomer,
+        product_id: ProductId,
+        coupon_id: CouponId,
+    },
+    DeleteCartCoupon {
+        customer: CartCustomer,
+        product_id: ProductId,
+    },
     CartProduct {
         customer: CartCustomer,
         product_id: ProductId,
@@ -105,6 +114,24 @@ impl RouteBuilder for Route {
                 "cart/{}/products/{}/increment",
                 cart_customer_route(customer),
                 product_id
+            ),
+            AddCartCoupon {
+                customer,
+                product_id,
+                coupon_id,
+            } => format!(
+                "cart/{}/products/{}/coupon/{}",
+                cart_customer_route(customer),
+                product_id,
+                coupon_id,
+            ),
+            DeleteCartCoupon {
+                customer,
+                product_id,
+            } => format!(
+                "cart/{}/products/{}/coupon",
+                cart_customer_route(customer),
+                product_id,
             ),
             CartProduct {
                 customer,
@@ -230,6 +257,32 @@ impl Route {
                             }
                         }
                         None
+                    }
+                )
+                .with_route(
+                    r"^/cart/by-user/(\d+)/products/(\d+)/coupon/(\d+)$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                        Some(Route::AddCartCoupon {
+                            customer,
+                            product_id,
+                            coupon_id,
+                        })
+                    }
+                )
+                .with_route(
+                    r"^/cart/by-user/(\d+)/products/(\d+)/coupon$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        Some(Route::DeleteCartCoupon {
+                            customer,
+                            product_id,
+                        })
                     }
                 )
                 .with_route(
@@ -497,6 +550,10 @@ pub trait CartClient {
     fn list(&self, customer: CartCustomer, from: ProductId, count: i32) -> ApiFuture<Cart>;
     /// Merge carts
     fn merge(&self, from: CartCustomer, to: CartCustomer) -> ApiFuture<Cart>;
+    /// Add coupon
+    fn add_coupon(&self, customer: CartCustomer, product_id: ProductId, coupon_id: CouponId) -> ApiFuture<Cart>;
+    /// Delete coupon
+    fn delete_coupon(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart>;
 }
 
 impl CartClient for RestApiClient {
@@ -604,6 +661,20 @@ impl CartClient for RestApiClient {
             self.http_client
                 .post(&self.build_route(&Route::CartMerge))
                 .body(JsonPayload(&CartMergePayload { from, to })),
+        )
+    }
+
+    fn add_coupon(&self, customer: CartCustomer, product_id: ProductId, coupon_id: CouponId) -> ApiFuture<Cart> {
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::AddCartCoupon {customer, product_id, coupon_id}))
+        )
+    }
+
+    fn delete_coupon(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart> {
+        http_req(
+            self.http_client
+                .delete(&self.build_route(&Route::DeleteCartCoupon {customer, product_id}))
         )
     }
 }

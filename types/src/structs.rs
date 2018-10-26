@@ -20,6 +20,7 @@ pub struct CartItem {
     pub store_id: StoreId,
     pub pre_order: bool,
     pub pre_order_days: i32,
+    pub coupon_id: Option<CouponId>,
 }
 
 pub type Cart = HashSet<CartItem>;

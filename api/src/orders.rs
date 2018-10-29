@@ -841,7 +841,7 @@ pub struct BuyNow {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CouponInfo {
-    pub coupon_id: CouponId,
+    pub id: CouponId,
     pub percent: i32,
 }
 

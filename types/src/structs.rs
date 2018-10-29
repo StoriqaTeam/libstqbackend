@@ -7,6 +7,7 @@ use stq_static_resources::Currency;
 pub struct ProductSellerPrice {
     pub price: ProductPrice,
     pub currency: Currency,
+    pub discount: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

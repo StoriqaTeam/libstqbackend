@@ -1,9 +1,13 @@
 pub mod in_memory;
+pub mod null;
 pub mod redis;
 pub mod typed;
 
 use failure::Fail;
-use std::marker::PhantomData;
+
+pub use self::in_memory::{InMemoryCache, InMemoryCacheError};
+pub use self::null::NullCache;
+pub use self::typed::{TypedCache, TypedCacheError};
 
 pub trait Cache<T> {
     type Error: Fail;
@@ -13,6 +17,25 @@ pub trait Cache<T> {
     fn set(&self, key: &str, value: T) -> Result<(), Self::Error>;
 
     fn remove(&self, key: &str) -> Result<bool, Self::Error>;
+}
+
+impl<C, T> Cache<T> for Box<C>
+where
+    C: ?Sized + Cache<T>,
+{
+    type Error = C::Error;
+
+    fn get(&self, key: &str) -> Result<Option<T>, Self::Error> {
+        (**self).get(key)
+    }
+
+    fn set(&self, key: &str, value: T) -> Result<(), Self::Error> {
+        (**self).set(key, value)
+    }
+
+    fn remove(&self, key: &str) -> Result<bool, Self::Error> {
+        (**self).remove(key)
+    }
 }
 
 pub trait CacheSingle<T> {
@@ -25,31 +48,7 @@ pub trait CacheSingle<T> {
     fn remove(&self) -> Result<bool, Self::Error>;
 }
 
-pub struct CachedSingle<C, E, T>
-where
-    C: Cache<T, Error = E>,
-    E: Fail,
-{
-    backend: C,
-    phantom_e: PhantomData<E>,
-    phantom_t: PhantomData<T>,
-}
-
-impl<C, E, T> From<C> for CachedSingle<C, E, T>
-where
-    C: Cache<T, Error = E>,
-    E: Fail,
-{
-    fn from(cache: C) -> CachedSingle<C, E, T> {
-        CachedSingle {
-            backend: cache,
-            phantom_e: PhantomData,
-            phantom_t: PhantomData,
-        }
-    }
-}
-
-impl<C, E: Fail, T> CacheSingle<T> for CachedSingle<C, E, T>
+impl<C, E, T> CacheSingle<T> for C
 where
     C: Cache<T, Error = E>,
     E: Fail,
@@ -57,14 +56,14 @@ where
     type Error = E;
 
     fn get(&self) -> Result<Option<T>, Self::Error> {
-        self.backend.get("")
+        self.get("")
     }
 
     fn set(&self, value: T) -> Result<(), Self::Error> {
-        self.backend.set("", value)
+        self.set("", value)
     }
 
     fn remove(&self) -> Result<bool, Self::Error> {
-        self.backend.remove("")
+        self.remove("")
     }
 }

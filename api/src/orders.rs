@@ -837,6 +837,7 @@ pub struct BuyNow {
     pub receiver_phone: String,
     pub pre_order: bool,
     pub pre_order_days: i32,
+    pub coupon:Option<CouponInfo>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

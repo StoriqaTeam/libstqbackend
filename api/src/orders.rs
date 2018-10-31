@@ -891,7 +891,6 @@ pub trait OrderClient {
         address: AddressFull,
         receiver_name: String,
         receiver_phone: String,
-        receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
     ) -> ApiFuture<Vec<Order>>;
     fn create_buy_now(

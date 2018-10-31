@@ -779,6 +779,7 @@ pub struct Order {
     pub address: AddressFull,
     pub receiver_name: String,
     pub receiver_phone: String,
+    pub receiver_email: String,
     pub state: OrderState,
     pub payment_status: bool,
     pub delivery_company: Option<String>,
@@ -831,6 +832,7 @@ pub struct BuyNow {
     pub store_id: StoreId,
     pub address: AddressFull,
     pub receiver_name: String,
+    pub receiver_email: String,
     pub price: ProductSellerPrice,
     pub quantity: Quantity,
     pub currency: Currency,
@@ -838,7 +840,7 @@ pub struct BuyNow {
     pub receiver_phone: String,
     pub pre_order: bool,
     pub pre_order_days: i32,
-    pub coupon:Option<CouponInfo>,
+    pub coupon: Option<CouponInfo>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

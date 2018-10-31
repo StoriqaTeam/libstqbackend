@@ -817,7 +817,6 @@ pub struct ConvertCartPayload {
     pub receiver_name: String,
     #[validate(custom = "validate_phone")]
     pub receiver_phone: String,
-    pub receiver_email: String,
     #[serde(flatten)]
     pub address: AddressFull,
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
@@ -931,7 +930,6 @@ impl OrderClient for RestApiClient {
         address: AddressFull,
         receiver_name: String,
         receiver_phone: String,
-        receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
@@ -944,7 +942,6 @@ impl OrderClient for RestApiClient {
                     address,
                     receiver_name,
                     receiver_phone,
-                    receiver_email,
                     coupons
                 })),
         )

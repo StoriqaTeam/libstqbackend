@@ -779,6 +779,7 @@ pub struct Order {
     pub address: AddressFull,
     pub receiver_name: String,
     pub receiver_phone: String,
+    pub receiver_email: String,
     pub state: OrderState,
     pub payment_status: bool,
     pub delivery_company: Option<String>,
@@ -817,6 +818,7 @@ pub struct ConvertCartPayload {
     pub receiver_name: String,
     #[validate(custom = "validate_phone")]
     pub receiver_phone: String,
+    pub receiver_email: String,
     #[serde(flatten)]
     pub address: AddressFull,
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
@@ -830,6 +832,7 @@ pub struct BuyNow {
     pub store_id: StoreId,
     pub address: AddressFull,
     pub receiver_name: String,
+    pub receiver_email: String,
     pub price: ProductSellerPrice,
     pub quantity: Quantity,
     pub currency: Currency,
@@ -837,7 +840,7 @@ pub struct BuyNow {
     pub receiver_phone: String,
     pub pre_order: bool,
     pub pre_order_days: i32,
-    pub coupon:Option<CouponInfo>,
+    pub coupon: Option<CouponInfo>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -890,6 +893,7 @@ pub trait OrderClient {
         address: AddressFull,
         receiver_name: String,
         receiver_phone: String,
+        receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
     ) -> ApiFuture<Vec<Order>>;
     fn create_buy_now(
@@ -930,6 +934,7 @@ impl OrderClient for RestApiClient {
         address: AddressFull,
         receiver_name: String,
         receiver_phone: String,
+        receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
@@ -942,6 +947,7 @@ impl OrderClient for RestApiClient {
                     address,
                     receiver_name,
                     receiver_phone,
+                    receiver_email,
                     coupons
                 })),
         )

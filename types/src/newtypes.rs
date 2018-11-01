@@ -81,6 +81,7 @@ i32_newtype!(CustomAttributeId);
 i32_newtype!(AttributeId);
 i32_newtype!(CategoryId);
 i32_newtype!(CouponId);
+i32_newtype!(PickupId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);

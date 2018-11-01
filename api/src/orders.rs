@@ -40,6 +40,10 @@ pub enum Route {
         customer: CartCustomer,
         product_id: ProductId,
     },
+    CartProductDeliveryMethod {
+        customer: CartCustomer,
+        product_id: ProductId,
+    },
     CartProductQuantity {
         customer: CartCustomer,
         product_id: ProductId,
@@ -152,6 +156,14 @@ impl RouteBuilder for Route {
                 "cart/{}/products/{}",
                 cart_customer_route(customer),
                 product_id
+            ),
+            CartProductDeliveryMethod {
+                customer,
+                product_id,
+            } => format!(
+                "cart/{}/products/{}/delivery_method",
+                cart_customer_route(customer),
+                product_id,
             ),
             CartProductQuantity {
                 customer,
@@ -342,6 +354,30 @@ impl Route {
                         let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
                         let product_id = params.next()?.parse().ok().map(ProductId)?;
                         Some(Route::DeleteCartCouponByProduct {
+                            customer,
+                            product_id,
+                        })
+                    }
+                )
+                .with_route(
+                    r"^/cart/by-user/(\d+)/products/(\d+)/delivery_method$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        Some(Route::CartProductDeliveryMethod {
+                            customer,
+                            product_id,
+                        })
+                    }
+                )
+                .with_route(
+                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/delivery_method$",
+                    |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        Some(Route::CartProductDeliveryMethod {
                             customer,
                             product_id,
                         })
@@ -556,6 +592,7 @@ pub struct SetterPayload<T> {
 pub type CartProductQuantityPayload = SetterPayload<Quantity>;
 pub type CartProductSelectionPayload = SetterPayload<bool>;
 pub type CartProductCommentPayload = SetterPayload<String>;
+pub type CartProductDeliveryMethodIdPayload = SetterPayload<DeliveryMethodId>;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CartProductIncrementPayload {
@@ -618,6 +655,10 @@ pub trait CartClient {
     fn delete_coupon(&self, customer: CartCustomer, coupon_id: CouponId) -> ApiFuture<Cart>;
     /// Delete coupon by product id
     fn delete_coupon_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart>;
+    /// Set delivery method
+    fn set_delivery_method(&self, customer: CartCustomer, product_id: ProductId, delivery_method_id: DeliveryMethodId) -> ApiFuture<Cart>;
+    /// Delete delivery method by product id
+    fn delete_delivery_method_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart>;
 }
 
 impl CartClient for RestApiClient {
@@ -746,6 +787,21 @@ impl CartClient for RestApiClient {
         http_req(
             self.http_client
                 .delete(&self.build_route(&Route::DeleteCartCouponByProduct {customer, product_id}))
+        )
+    }
+
+    fn set_delivery_method(&self, customer: CartCustomer, product_id: ProductId, value: DeliveryMethodId) -> ApiFuture<Cart> {
+        http_req(
+            self.http_client
+                .post(&self.build_route(&Route::CartProductDeliveryMethod {customer, product_id}))
+                .body(JsonPayload(&CartProductDeliveryMethodIdPayload { value }))
+        )
+    }
+
+    fn delete_delivery_method_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart> {
+        http_req(
+            self.http_client
+                .delete(&self.build_route(&Route::CartProductDeliveryMethod {customer, product_id}))
         )
     }
 }

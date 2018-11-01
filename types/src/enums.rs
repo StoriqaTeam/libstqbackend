@@ -77,6 +77,13 @@ pub enum CartCustomer {
     Anonymous(SessionId),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, From, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeliveryMethodId {
+    Package { id: CompanyPackageId },
+    Pickup { id: PickupId },
+}
+
 impl fmt::Display for CartCustomer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::CartCustomer::*;

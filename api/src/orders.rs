@@ -849,6 +849,8 @@ pub struct Order {
     pub coupon_discount: Option<ProductPrice>,
     pub product_discount: Option<ProductPrice>,
     pub total_amount: ProductPrice,
+    pub company_package_id: Option<CompanyPackageId>,
+    pub delivery_price: f64,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
@@ -867,6 +869,14 @@ pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Validate)]
+pub struct DeliveryInfo {
+    pub company_package_id: CompanyPackageId,
+    pub name: String,
+    pub logo: String,
+    pub price: f64,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Validate)]
 pub struct ConvertCartPayload {
     pub conversion_id: Option<ConversionId>,
@@ -879,6 +889,7 @@ pub struct ConvertCartPayload {
     pub address: AddressFull,
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
     pub coupons: HashMap<CouponId, CouponInfo>,
+    pub delivery_info: HashMap<ProductId, DeliveryInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Validate)]
@@ -897,6 +908,7 @@ pub struct BuyNow {
     pub pre_order: bool,
     pub pre_order_days: i32,
     pub coupon: Option<CouponInfo>,
+    pub delivery_info: Option<DeliveryInfo>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -951,6 +963,7 @@ pub trait OrderClient {
         receiver_phone: String,
         receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
+        delivery_info: HashMap<ProductId, DeliveryInfo>,
     ) -> ApiFuture<Vec<Order>>;
     fn create_buy_now(
         &self,
@@ -992,6 +1005,7 @@ impl OrderClient for RestApiClient {
         receiver_phone: String,
         receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
+        delivery_info: HashMap<ProductId, DeliveryInfo>,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
             self.http_client
@@ -1004,7 +1018,8 @@ impl OrderClient for RestApiClient {
                     receiver_name,
                     receiver_phone,
                     receiver_email,
-                    coupons
+                    coupons,
+                    delivery_info,
                 })),
         )
     }

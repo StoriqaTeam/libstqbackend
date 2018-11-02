@@ -90,6 +90,7 @@ pub enum ComparisonMode {
     EQ,
     GTE,
     GT,
+    IN,
 }
 
 type ColumnFilters = Vec<(ComparisonMode, Box<ToSql + 'static>)>;
@@ -106,7 +107,7 @@ fn build_where_from_filters(filters: Filters, mut i: usize) -> (String, Vec<Box<
             if started {
                 query.push_str(" AND ");
             }
-            query.push_str(&format!("{} {} ${}", col, &mode.to_string(), i));
+            query.push_str(&format!("{} {}", col, mode.arg(i)));
             args.push(value);
 
             started = true;
@@ -130,8 +131,19 @@ impl fmt::Display for ComparisonMode {
                 EQ => "=",
                 GTE => ">=",
                 GT => ">",
+                IN => "in",
             }
         )
+    }
+}
+
+impl ComparisonMode {
+    fn arg(&self, arg_number: usize) -> String {
+        use self::ComparisonMode::*;
+        match self {
+            IN => format!("= any(${})", arg_number),
+            _ => format!("{} ${}", self, arg_number),
+        }
     }
 }
 
@@ -161,11 +173,18 @@ pub enum Range<T> {
     From(RangeLimit<T>),
     To(RangeLimit<T>),
     Between((RangeLimit<T>, RangeLimit<T>)),
+    In(Vec<T>)
 }
 
 impl<T> From<T> for Range<T> {
     fn from(v: T) -> Self {
         Range::Exact(v)
+    }
+}
+
+impl<T> From<Vec<T>> for Range<T> {
+    fn from(v: Vec<T>) -> Self {
+        Range::In(v)
     }
 }
 
@@ -181,6 +200,7 @@ impl<T> Range<T> {
             From(from) => From(from.convert::<U>()),
             To(to) => To(to.convert::<U>()),
             Between((from, to)) => Between((from.convert::<U>(), to.convert::<U>())),
+            In(values) => In(values.into_iter().map(|v| v.into()).collect()),
         }
     }
 }
@@ -232,6 +252,12 @@ impl FilteredOperationBuilder {
                     Box::new(to.value),
                 ),
             ],
+            In(values) => vec![
+                (
+                    ComparisonMode::IN,
+                    Box::new(values),
+                )
+            ]
         };
 
         self.filters.insert(column, new_filters);

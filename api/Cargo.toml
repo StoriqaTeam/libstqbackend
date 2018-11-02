@@ -10,7 +10,7 @@ geo = { version = "*", features = ["use-serde"] }
 hyper = "0.12"
 lazy_static = "*"
 regex = "*"
-reqwest = { git = "https://github.com/seanmonstar/reqwest", rev = "3424e91746f64a50bd02408750a5f01eef2abd5f" }
+reqwest = "0.9.4"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"

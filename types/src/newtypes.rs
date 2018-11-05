@@ -82,6 +82,7 @@ i32_newtype!(AttributeId);
 i32_newtype!(CategoryId);
 i32_newtype!(CouponId);
 i32_newtype!(PickupId);
+i32_newtype!(ShippingId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);

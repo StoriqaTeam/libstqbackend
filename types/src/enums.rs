@@ -80,8 +80,9 @@ pub enum CartCustomer {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, From, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DeliveryMethodId {
-    Package { id: CompanyPackageId },
+    Package { id: CompanyPackageId }, // deprecated
     Pickup { id: PickupId },
+    ShippingPackage { id: ShippingId },
 }
 
 impl fmt::Display for CartCustomer {

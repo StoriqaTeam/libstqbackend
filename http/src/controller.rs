@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use failure;
 use failure::Fail;
 use futures::future;
@@ -14,7 +15,7 @@ use std::sync::Arc;
 use errors::*;
 use system::{SystemService, SystemServiceImpl};
 
-pub type ControllerFuture = Box<Future<Item = String, Error = failure::Error>>;
+pub type ControllerFuture = Box<Future<Item=String, Error=failure::Error>>;
 
 /// The meat of your application. Best used with RouteParser in utils.
 pub trait Controller {
@@ -41,6 +42,7 @@ where
     type Future = ServerFuture;
 
     fn call(&self, req: Request) -> ServerFuture {
+        let call_start = Local::now();
         debug!("Received request: {:?}", req);
 
         Box::new(
@@ -71,7 +73,15 @@ where
                             Err(err) => future::ok(Self::response_with_error(&err)),
                         }
                     })
-                        .inspect(|resp| debug!("Sending response: {:?}", resp)),
+                        .inspect(move |resp| {
+                            let dt = Local::now() - call_start;
+                            debug!(
+                                "Sending response: {:?}, elapsed time = {}.{:03}",
+                                resp,
+                                dt.num_seconds(),
+                                dt.num_milliseconds()
+                            )
+                        }),
                 ) as ServerFuture,
             }.map({
                 let middleware = self.middleware.clone();

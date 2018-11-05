@@ -2,14 +2,14 @@ use hyper;
 use serde_json::Value;
 use std::fmt;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ErrorMessage {
     pub code: u16,
     pub description: String,
     pub payload: Option<Value>,
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Clone, Fail)]
 pub enum Error {
     Api(hyper::StatusCode, Option<ErrorMessage>),
     Network(String),

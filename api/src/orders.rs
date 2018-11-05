@@ -851,6 +851,7 @@ pub struct Order {
     pub total_amount: ProductPrice,
     pub company_package_id: Option<CompanyPackageId>,
     pub delivery_price: f64,
+    pub shipping_id: Option<ShippingId>,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
@@ -872,6 +873,7 @@ pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Validate)]
 pub struct DeliveryInfo {
     pub company_package_id: CompanyPackageId,
+    pub shipping_id: ShippingId,
     pub name: String,
     pub logo: String,
     pub price: f64,

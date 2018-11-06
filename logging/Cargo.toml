@@ -5,7 +5,7 @@ version = "0.1.0"
 [dependencies]
 chrono = "0.4"
 env_logger = "0.5"
-gelf = { git = "https://github.com/StoriqaTeam/gelf-rust", branch = "vorot93/log-0.4" }
+gelf = { git = "https://github.com/StoriqaTeam/gelf-rust", rev = "b05956244f020bb4a62b859bd1025b6c699b2628" }
 log = { version = "0.4", features = ["std", "serde"] }
 serde = "1"
 serde_derive = "1"

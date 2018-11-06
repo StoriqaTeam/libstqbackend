@@ -1,21 +1,27 @@
+use std;
+use std::sync::Arc;
+
 use chrono::prelude::*;
 use failure;
 use failure::Fail;
-use futures::future;
+use futures::future::{self, Either};
 use futures::prelude::*;
 use hyper;
 use hyper::header::{AccessControlAllowHeaders, AccessControlAllowMethods, AccessControlRequestHeaders, ContentLength, ContentType};
-use hyper::server::{Request, Response, Service};
+use hyper::server::Service;
 use hyper::Method::{Get, Options, Post};
 use hyper::{mime, Error, Headers, StatusCode};
+use hyper::{Request, Response};
 use serde_json;
-use std;
-use std::sync::Arc;
+
+use log::{self, Level};
+
+use request_util::{read_body, CorrelationToken};
 
 use errors::*;
 use system::{SystemService, SystemServiceImpl};
 
-pub type ControllerFuture = Box<Future<Item=String, Error=failure::Error>>;
+pub type ControllerFuture = Box<Future<Item = String, Error = failure::Error>>;
 
 /// The meat of your application. Best used with RouteParser in utils.
 pub trait Controller {
@@ -26,7 +32,7 @@ pub type ServerFuture = Box<Future<Item = Response, Error = hyper::Error>>;
 
 /// Batteries-included Service for Hyper HTTP server. Feed it your Controller and it'll adapt it for Hyper.
 pub struct Application<E: Fail + Codeable + PayloadCarrier> {
-    pub controller: Box<Controller>,
+    pub controller: Arc<dyn Controller>,
     pub system_service: Box<SystemService>,
     pub middleware: Arc<Fn(Response) -> Response>,
     _error_type: std::marker::PhantomData<E>,
@@ -43,7 +49,11 @@ where
 
     fn call(&self, req: Request) -> ServerFuture {
         let call_start = Local::now();
-        debug!("Received request: {:?}", req);
+
+        let correlation_token = match req.headers().get::<CorrelationToken>().map(|token| token.clone()) {
+            Some(token) => token.to_string(),
+            None => String::default(),
+        };
 
         Box::new(
             match *req.method() {
@@ -58,31 +68,70 @@ where
                         new_headers.set(AccessControlAllowHeaders(a.to_vec()));
                     };
                     new_headers.set(ContentType(mime::TEXT_HTML));
-
                     std::mem::replace(resp.headers_mut(), new_headers);
 
                     Box::new(future::ok(resp)) as ServerFuture
                 }
-                _ => Box::new(
-                    match req.uri().path() {
-                        "/healthcheck" => self.system_service.healthcheck(),
-                        _ => self.controller.call(req),
-                    }.then({
-                        |res| match res {
-                            Ok(data) => future::ok(Self::response_with_json(data)),
-                            Err(err) => future::ok(Self::response_with_error(&err)),
-                        }
-                    })
-                        .inspect(move |resp| {
-                            let dt = Local::now() - call_start;
-                            debug!(
-                                "Sending response: {:?}, elapsed time = {}.{:03}",
-                                resp,
-                                dt.num_seconds(),
-                                dt.num_milliseconds()
-                            )
+                _ => {
+                    let token = correlation_token.clone();
+
+                    Box::new(
+                        match req.uri().path() {
+                            "/healthcheck" => self.system_service.healthcheck(),
+                            _ => {
+                                let controller = self.controller.clone();
+                                let level = log::max_level();
+
+                                let fut = if level == Level::Debug || level == Level::Trace {
+                                    let (method, uri, http_version, headers, body) = req.deconstruct();
+                                    Either::A(
+                                        read_body(body)
+                                            .map_err(From::from)
+                                            .and_then(move |body| {
+                                                debug!(
+                                                    "Server received Request, method: {}, url: {}, headers: {:#?}, body: {:?}, correlation token: {}",
+                                                    method, uri, headers, body, token
+                                                );
+
+                                                let mut req = Request::new(method, uri);
+                                                req.set_body(body);
+                                                req.set_version(http_version);
+                                                std::mem::replace(req.headers_mut(), headers);
+
+                                                Ok(req)
+                                            }).and_then(move |req| controller.call(req)),
+                                    )
+                                } else {
+                                    Either::B(self.controller.call(req))
+                                };
+
+                                Box::new(fut)
+                            }
+                        }.then({
+                            let token = correlation_token.clone();
+
+                            move |res| {
+                                let (response, body) = match res {
+                                    Ok(data) => (Self::response_with_json(data.clone()), data),
+                                    Err(err) => (Self::response_with_error(&err), err.to_string()),
+                                };
+
+                                let dt = Local::now() - call_start;
+                                debug!(
+                                    "Server send Response, status: {}, headers: {:#?}, body: {:?}, elapsed time = {}.{:03}, correlation token: {}",
+                                    response.status().as_u16(),
+                                    response.headers(),
+                                    body,
+                                    dt.num_seconds(),
+                                    dt.num_milliseconds(),
+                                    token
+                                );
+
+                                future::ok(response)
+                            }
                         }),
-                ) as ServerFuture,
+                    ) as ServerFuture
+                }
             }.map({
                 let middleware = self.middleware.clone();
                 move |resp| middleware(resp)
@@ -100,7 +149,7 @@ where
         T: Controller + 'static,
     {
         Self {
-            controller: Box::new(controller),
+            controller: Arc::new(controller),
             middleware: Arc::new(|resp| resp),
             system_service: Box::new(SystemServiceImpl::default()),
             _error_type: Default::default(),
@@ -112,7 +161,7 @@ where
     where
         T: Controller + 'static,
     {
-        self.controller = Box::new(controller);
+        self.controller = Arc::new(controller);
         self
     }
 

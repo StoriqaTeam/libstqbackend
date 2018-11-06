@@ -134,15 +134,15 @@ impl Client {
             Err(Either::A((get_error, _timeout))) => Err(Error::Network(get_error)),
             Err(Either::B((timeout_error, _get))) => {
                 error!(
-                    "Timeout future error occured while connecting to {}, using method: {} after: {:?}.",
+                    "Timeout future error occurred while connecting to {}, using method: {} after: {:?}.",
                     url, method, timeout_duration
                 );
                 Err(Error::Network(From::from(timeout_error)))
             }
         });
 
-        let work_with_timeout =
-            work.and_then(move |res| {
+        let work_with_timeout = work
+            .and_then(move |res| {
                 let status = res.status();
                 let body_future: Box<Future<Item = String, Error = Error>> = Box::new(read_body(res.body()).map_err(Error::Network));
                 match status.as_u16() {
@@ -164,8 +164,8 @@ impl Client {
                     })),
                 }
             }).then(|result| callback.send(result))
-                .map(|_| ())
-                .map_err(|_| ());
+            .map(|_| ())
+            .map_err(|_| ());
 
         Box::new(work_with_timeout)
     }
@@ -289,8 +289,7 @@ impl ClientHandle {
             .map_err(|err| Error::Unknown(format!("Unexpected error sending http client request params to channel: {}", err)))
             .and_then(|_| {
                 rx.map_err(|err| Error::Unknown(format!("Unexpected error receiving http client response from channel: {}", err)))
-            })
-            .and_then(|result| result)
+            }).and_then(|result| result)
             .map_err(move |err| {
                 error!("{} {} : {}", method_clone, url_clone, err);
                 err

@@ -11,10 +11,10 @@ extern crate log;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate chrono;
 extern crate serde_json;
 extern crate tokio_core;
 extern crate validator;
-extern crate chrono;
 
 pub mod client;
 pub mod controller;

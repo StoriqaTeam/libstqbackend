@@ -9,6 +9,8 @@ use serde_json;
 
 header! { (SessionId, "Session-Id") => [String] }
 header! { (Currency, "Currency") => [String] }
+header! { (CorrelationToken, "Correlation-Token") => [String] }
+header! { (RequestTimeout, "Request-timeout") => [String] }
 
 #[derive(Clone, Debug, Fail)]
 pub enum ParseError {

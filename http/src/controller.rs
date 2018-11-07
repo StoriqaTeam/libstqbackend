@@ -16,7 +16,7 @@ use serde_json;
 
 use log::{self, Level};
 
-use request_util::{read_body, CorrelationToken};
+use request_util::{get_correlation_token, read_body};
 
 use errors::*;
 use system::{SystemService, SystemServiceImpl};
@@ -50,10 +50,7 @@ where
     fn call(&self, req: Request) -> ServerFuture {
         let call_start = Local::now();
 
-        let correlation_token = match req.headers().get::<CorrelationToken>().map(|token| token.clone()) {
-            Some(token) => token.to_string(),
-            None => String::default(),
-        };
+        let correlation_token = get_correlation_token(&req);
 
         Box::new(
             match *req.method() {

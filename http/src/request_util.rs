@@ -76,3 +76,11 @@ where
             .and_then(|resp| serde_json::to_string(&resp).map_err(|e| e.into())),
     )
 }
+
+/// Try getting correlation token from request headers
+pub fn get_correlation_token(req: &hyper::Request) -> String {
+    match req.headers().get::<CorrelationToken>().map(|token| token.clone()) {
+        Some(token) => token.0,
+        None => String::default(),
+    }
+}

@@ -74,7 +74,16 @@ where
 
                     Box::new(
                         match req.uri().path() {
-                            "/healthcheck" => self.system_service.healthcheck(),
+                            "/healthcheck" => {
+                                Box::new(self.system_service.healthcheck().then(|res| {
+                                    let response = match res {
+                                        Ok(data) => Self::response_with_json(data.clone()),
+                                        Err(err) => Self::response_with_error(&err),
+                                    };
+
+                                    future::ok(response)
+                                })) as ServerFuture
+                            },
                             _ => {
                                 let controller = self.controller.clone();
                                 let level = log::max_level();
@@ -102,15 +111,13 @@ where
                                     Either::B(self.controller.call(req))
                                 };
 
-                                Box::new(fut)
-                            }
-                        }.then({
-                            let token = correlation_token.clone();
+                                Box::new(fut.then({
+                                let token = correlation_token.clone();
 
-                            move |res| {
+                                move |res| {
                                 let (response, body) = match res {
                                     Ok(data) => (Self::response_with_json(data.clone()), data),
-                                    Err(err) => (Self::response_with_error(&err), err.to_string()),
+                                    Err(err) => (Self::response_with_error(&err), Self::error_to_body(&err)),
                                 };
 
                                 let dt = Local::now() - call_start;
@@ -126,8 +133,9 @@ where
 
                                 future::ok(response)
                             }
-                        }),
-                    ) as ServerFuture
+                        }))
+                        }
+                    }) as ServerFuture
                 }
             }.map({
                 let middleware = self.middleware.clone();
@@ -182,8 +190,6 @@ where
 
     /// Responds with success, logs response body
     fn response_with_json(body: String) -> Response {
-        debug!("Http response body: {}", body);
-
         Self::response_with_body(body).with_status(StatusCode::Ok)
     }
 
@@ -194,6 +200,12 @@ where
         error!("Description: \"{}\". Payload: {:?}", error_data.description, error_data.payload);
         let mes = serde_json::to_string(&error_data).unwrap();
         Self::response_with_body(mes).with_status(hyper::StatusCode::try_from(error_data.code).unwrap())
+    }
+
+    fn error_to_body(error: &failure::Error) -> String {
+        let error_data = ErrorMessageWrapper::<E>::from(&error).inner;
+
+        serde_json::to_string(&error_data).unwrap()
     }
 
     fn response_with_body(body: String) -> Response {

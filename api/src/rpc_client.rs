@@ -23,19 +23,48 @@ impl RestApiClient {
             base_url: base_url.to_string(),
             http_client: Arc::new(
                 HttpClientBuilder::new()
-                    .default_headers(
-                        match caller_id {
-                            Some(v) => vec![(
-                                HeaderName::from_static("authorization"),
-                                HeaderValue::from_str(&v.to_string()).unwrap(),
-                            )],
-                            None => vec![],
-                        }.into_iter()
-                        .collect::<HeaderMap>(),
-                    ).build()
+                    .default_headers(RestApiClient::get_auth_headers(caller_id))
+                    .build()
                     .unwrap(),
             ),
         }
+    }
+
+    pub fn new_with_default_headers<S>(
+        base_url: &S,
+        caller_id: Option<UserId>,
+        headers: Option<HeaderMap>,
+    ) -> Self
+    where
+        S: ToString,
+    {
+        let mut default_headers = match headers {
+            Some(v) => v,
+            None => HeaderMap::new(),
+        };
+
+        default_headers.extend(RestApiClient::get_auth_headers(caller_id));
+
+        Self {
+            base_url: base_url.to_string(),
+            http_client: Arc::new(
+                HttpClientBuilder::new()
+                    .default_headers(default_headers)
+                    .build()
+                    .unwrap(),
+            ),
+        }
+    }
+
+    fn get_auth_headers(caller_id: Option<UserId>) -> HeaderMap {
+        match caller_id {
+            Some(v) => vec![(
+                HeaderName::from_static("authorization"),
+                HeaderValue::from_str(&v.to_string()).unwrap(),
+            )],
+            None => vec![],
+        }.into_iter()
+        .collect::<HeaderMap>()
     }
 
     pub fn build_route(&self, route_builder: &RouteBuilder) -> String {

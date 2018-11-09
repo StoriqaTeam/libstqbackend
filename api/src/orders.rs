@@ -650,15 +650,33 @@ pub trait CartClient {
     /// Merge carts
     fn merge(&self, from: CartCustomer, to: CartCustomer) -> ApiFuture<Cart>;
     /// Add coupon
-    fn add_coupon(&self, customer: CartCustomer, product_id: ProductId, coupon_id: CouponId) -> ApiFuture<Cart>;
+    fn add_coupon(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+        coupon_id: CouponId,
+    ) -> ApiFuture<Cart>;
     /// Delete coupon
     fn delete_coupon(&self, customer: CartCustomer, coupon_id: CouponId) -> ApiFuture<Cart>;
     /// Delete coupon by product id
-    fn delete_coupon_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart>;
+    fn delete_coupon_by_product(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+    ) -> ApiFuture<Cart>;
     /// Set delivery method
-    fn set_delivery_method(&self, customer: CartCustomer, product_id: ProductId, delivery_method_id: DeliveryMethodId) -> ApiFuture<Cart>;
+    fn set_delivery_method(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+        delivery_method_id: DeliveryMethodId,
+    ) -> ApiFuture<Cart>;
     /// Delete delivery method by product id
-    fn delete_delivery_method_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart>;
+    fn delete_delivery_method_by_product(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+    ) -> ApiFuture<Cart>;
 }
 
 impl CartClient for RestApiClient {
@@ -769,39 +787,72 @@ impl CartClient for RestApiClient {
         )
     }
 
-    fn add_coupon(&self, customer: CartCustomer, product_id: ProductId, coupon_id: CouponId) -> ApiFuture<Cart> {
+    fn add_coupon(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+        coupon_id: CouponId,
+    ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
-                .post(&self.build_route(&Route::AddCartCoupon {customer, product_id, coupon_id}))
+                .post(&self.build_route(&Route::AddCartCoupon {
+                    customer,
+                    product_id,
+                    coupon_id,
+                })),
         )
     }
 
     fn delete_coupon(&self, customer: CartCustomer, coupon_id: CouponId) -> ApiFuture<Cart> {
         http_req(
             self.http_client
-                .delete(&self.build_route(&Route::DeleteCartCoupon {customer, coupon_id}))
+                .delete(&self.build_route(&Route::DeleteCartCoupon {
+                    customer,
+                    coupon_id,
+                })),
         )
     }
 
-    fn delete_coupon_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart> {
+    fn delete_coupon_by_product(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+    ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
-                .delete(&self.build_route(&Route::DeleteCartCouponByProduct {customer, product_id}))
+                .delete(&self.build_route(&Route::DeleteCartCouponByProduct {
+                    customer,
+                    product_id,
+                })),
         )
     }
 
-    fn set_delivery_method(&self, customer: CartCustomer, product_id: ProductId, value: DeliveryMethodId) -> ApiFuture<Cart> {
+    fn set_delivery_method(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+        value: DeliveryMethodId,
+    ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
-                .post(&self.build_route(&Route::CartProductDeliveryMethod {customer, product_id}))
-                .body(JsonPayload(&CartProductDeliveryMethodIdPayload { value }))
+                .post(&self.build_route(&Route::CartProductDeliveryMethod {
+                    customer,
+                    product_id,
+                })).body(JsonPayload(&CartProductDeliveryMethodIdPayload { value })),
         )
     }
 
-    fn delete_delivery_method_by_product(&self, customer: CartCustomer, product_id: ProductId) -> ApiFuture<Cart> {
+    fn delete_delivery_method_by_product(
+        &self,
+        customer: CartCustomer,
+        product_id: ProductId,
+    ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
-                .delete(&self.build_route(&Route::CartProductDeliveryMethod {customer, product_id}))
+                .delete(&self.build_route(&Route::CartProductDeliveryMethod {
+                    customer,
+                    product_id,
+                })),
         )
     }
 }

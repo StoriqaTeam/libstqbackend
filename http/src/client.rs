@@ -218,6 +218,18 @@ impl ClientHandle {
         )
     }
 
+    pub fn simple_request(
+        &self,
+        method: hyper::Method,
+        url: String,
+        body: Option<String>,
+        headers: Option<Headers>,
+    ) -> Box<Future<Item = String, Error = Error> + Send> {
+        Box::new(
+            self.send_request_with_retries(method, url, body, headers, None, self.max_retries)
+        )
+    }
+
     fn send_request_with_retries(
         &self,
         method: hyper::Method,

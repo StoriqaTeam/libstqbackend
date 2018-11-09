@@ -1,4 +1,5 @@
 use std;
+use std::str;
 use std::sync::Arc;
 
 use chrono::prelude::*;
@@ -16,7 +17,7 @@ use serde_json;
 
 use log::{self, Level};
 
-use request_util::{get_correlation_token, read_body};
+use request_util::{get_correlation_token, try_read_body};
 
 use errors::*;
 use system::{SystemService, SystemServiceImpl};
@@ -91,16 +92,22 @@ where
                                 let fut = if level == Level::Debug || level == Level::Trace {
                                     let (method, uri, http_version, headers, body) = req.deconstruct();
                                     Either::A(
-                                        read_body(body)
+                                        try_read_body(body)
                                             .map_err(From::from)
-                                            .and_then(move |body| {
-                                                debug!(
-                                                    "Server received Request, method: {}, url: {}, headers: {:#?}, body: {:?}, correlation token: {}",
-                                                    method, uri, headers, body, token
-                                                );
+                                            .and_then(move |bytes| {
+                                                {
+                                                    let body_log = match str::from_utf8(&bytes) { 
+                                                        Ok(data) => data,
+                                                        Err(_) => "`can not parse body to string`",
+                                                    };
+                                                    debug!(
+                                                        "Server received Request, method: {}, url: {}, headers: {:#?}, body: {}, correlation token: {}",
+                                                        method, uri, headers, body_log, token
+                                                    );
+                                                }
 
                                                 let mut req = Request::new(method, uri);
-                                                req.set_body(body);
+                                                req.set_body(bytes);
                                                 req.set_version(http_version);
                                                 std::mem::replace(req.headers_mut(), headers);
 

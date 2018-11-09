@@ -63,6 +63,14 @@ pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::
     )
 }
 
+/// Try reads body of request and response in Future format
+pub fn try_read_body(body: hyper::Body) -> Box<Future<Item = Vec<u8>, Error = hyper::Error> + Send> {
+    Box::new(body.fold(Vec::new(), |mut acc, chunk| {
+        acc.extend_from_slice(&*chunk);
+        future::ok::<_, hyper::Error>(acc)
+    }))
+}
+
 pub fn serialize_future<T, E, F>(f: F) -> Box<Future<Item = String, Error = failure::Error>>
 where
     F: IntoFuture<Item = T, Error = E> + 'static,

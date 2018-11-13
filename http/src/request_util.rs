@@ -2,15 +2,40 @@ use failure;
 use failure::Fail;
 use futures::future;
 use futures::prelude::*;
-use hyper;
+use hyper::{
+    self,
+    header::{self, Header},
+};
 use serde::de::Deserialize;
 use serde::ser::Serialize;
 use serde_json;
+use std::fmt;
+use std::str::FromStr;
 
 header! { (SessionId, "Session-Id") => [String] }
 header! { (Currency, "Currency") => [String] }
 header! { (CorrelationToken, "Correlation-Token") => [String] }
-header! { (RequestTimeout, "Request-timeout") => [String] }
+
+#[derive(Clone, Copy, Debug)]
+pub struct RequestTimeoutHeader(u32);
+
+impl Header for RequestTimeoutHeader {
+    fn header_name() -> &'static str {
+        "Request-Timeout"
+    }
+
+    fn parse_header(raw: &header::Raw) -> hyper::Result<RequestTimeoutHeader> {
+        raw.one()
+            .and_then(|bytes| std::str::from_utf8(bytes).ok())
+            .and_then(|s| u32::from_str(s).ok())
+            .map(RequestTimeoutHeader)
+            .ok_or(hyper::Error::Header)
+    }
+
+    fn fmt_header(&self, f: &mut header::Formatter) -> fmt::Result {
+        f.fmt_line(&self.0)
+    }
+}
 
 #[derive(Clone, Debug, Fail)]
 pub enum ParseError {
@@ -90,5 +115,20 @@ pub fn get_correlation_token(req: &hyper::Request) -> String {
     match req.headers().get::<CorrelationToken>().map(|token| token.clone()) {
         Some(token) => token.0,
         None => String::default(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::header::Header;
+    use request_util::RequestTimeoutHeader;
+
+    #[test]
+    fn valid_request_timeout_header_is_parsed_correctly() {
+        let value = 1234;
+        let header_str = value.to_string();
+        let bytes = header_str.as_str().bytes().collect::<Vec<u8>>();
+        let raw_header = hyper::header::Raw::from(bytes);
+        assert_eq!(value, RequestTimeoutHeader::parse_header(&raw_header).unwrap().0);
     }
 }

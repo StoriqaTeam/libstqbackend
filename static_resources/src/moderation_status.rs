@@ -7,6 +7,7 @@ pub enum ModerationStatus {
     Draft,
     Moderation,
     Decline,
+    Blocked,
     Published,
 }
 
@@ -17,7 +18,8 @@ impl FromStr for ModerationStatus {
             "draft" => Ok(ModerationStatus::Draft),
             "moderation" => Ok(ModerationStatus::Moderation),
             "decline" => Ok(ModerationStatus::Decline),
-            "published" => Ok(ModerationStatus::Published),
+            "blocked" => Ok(ModerationStatus::Blocked),
+            "published" => Ok(ModerationStatus::Published),                       
             _ => Err(()),
         }
     }
@@ -29,6 +31,7 @@ impl fmt::Display for ModerationStatus {
             ModerationStatus::Draft => write!(f, "draft"),
             ModerationStatus::Moderation => write!(f, "moderation"),
             ModerationStatus::Decline => write!(f, "decline"),
+            ModerationStatus::Blocked => write!(f, "blocked"),
             ModerationStatus::Published => write!(f, "published"),
         }
     }

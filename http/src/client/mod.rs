@@ -104,11 +104,7 @@ impl Client {
             ..
         } = self;
 
-        Box::new(rx.and_then(move |payload| {
-            Self::send_request(&handle, &client, payload, timeout_duration_ms)
-                .map(|_| ())
-                .map_err(|_| ())
-        }))
+        Box::new(rx.and_then(move |payload| Self::send_request(&handle, &client, payload, timeout_duration_ms).then(|_| Ok(()))))
     }
 
     pub fn handle(&self) -> ClientHandle {

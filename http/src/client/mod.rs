@@ -136,7 +136,10 @@ impl Client {
                         .send(Err(Error::Parse(format!("Cannot parse url `{}`", url))))
                         .into_future()
                         .map(|_| ())
-                        .map_err(|_| ()),
+                        .map_err(|err| {
+                            error!("Failed to send a response to the oneshot callback channel: {:?}", err);
+                            ()
+                        }),
                 );
             }
         };
@@ -205,7 +208,10 @@ impl Client {
                 }
             }).then(|result| callback.send(result))
             .map(|_| ())
-            .map_err(|_| ());
+            .map_err(|err| {
+                error!("Failed to send a response to the oneshot callback channel: {:?}", err);
+                ()
+            });
 
         Box::new(work_with_timeout)
     }

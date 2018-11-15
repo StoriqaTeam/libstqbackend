@@ -8,7 +8,6 @@ use std::fmt;
 use std::mem;
 use std::time::Duration;
 
-use failure::Error as FailureError;
 use futures::future;
 use futures::future::Either;
 use futures::prelude::*;
@@ -35,7 +34,7 @@ pub trait HttpClient: Send + Sync + 'static {
         url: String,
         body: Option<String>,
         headers: Option<Headers>,
-    ) -> Box<Future<Item = Response, Error = FailureError> + Send>;
+    ) -> Box<Future<Item = Response, Error = Error> + Send>;
 
     fn request_json<T>(
         &self,
@@ -43,14 +42,18 @@ pub trait HttpClient: Send + Sync + 'static {
         url: String,
         body: Option<String>,
         headers: Option<Headers>,
-    ) -> Box<Future<Item = T, Error = FailureError> + Send>
+    ) -> Box<Future<Item = T, Error = Error> + Send>
     where
         T: for<'a> Deserialize<'a> + 'static + Send,
+        Self: Sized,
     {
-        Box::new(
-            self.request(method, url, body, headers)
-                .and_then(|response| serde_json::from_str::<T>(&response.0.as_str()).map_err(FailureError::from)),
-        )
+        Box::new(self.request(method, url, body, headers).and_then(|response| {
+            if response.0.is_empty() {
+                serde_json::from_value(serde_json::Value::Null)
+            } else {
+                serde_json::from_str::<T>(&response.0)
+            }.map_err(|e| Error::Parse(e.to_string()))
+        }))
     }
 }
 
@@ -71,17 +74,6 @@ pub struct Client {
     max_retries: usize,
     timeout_duration_ms: u64,
     handle: Handle,
-}
-
-impl Response {
-    pub fn parse<T: for<'a> Deserialize<'a> + 'static + Send>(&self) -> Result<T, FailureError> {
-        let response = &self.0;
-        if response.is_empty() {
-            serde_json::from_value(serde_json::Value::Null)
-        } else {
-            serde_json::from_str::<T>(&response)
-        }.map_err(From::from)
-    }
 }
 
 impl Client {
@@ -254,16 +246,13 @@ impl ClientHandle {
     where
         T: for<'a> Deserialize<'a> + 'static + Send,
     {
-        Box::new(
-            self.simple_request(method, url, body, headers)
-                .and_then(|response| {
-                    if response.is_empty() {
-                        serde_json::from_value(serde_json::Value::Null)
-                    } else {
-                        serde_json::from_str::<T>(&response)
-                    }.map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
-                }),
-        )
+        Box::new(self.simple_request(method, url, body, headers).and_then(|response| {
+            if response.is_empty() {
+                serde_json::from_value(serde_json::Value::Null)
+            } else {
+                serde_json::from_str::<T>(&response)
+            }.map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
+        }))
     }
 
     pub fn simple_request(
@@ -364,8 +353,8 @@ impl HttpClient for ClientHandle {
         url: String,
         body: Option<String>,
         headers: Option<Headers>,
-    ) -> Box<Future<Item = Response, Error = FailureError> + Send> {
-        Box::new(self.simple_request(method, url, body, headers).map(Response).map_err(From::from))
+    ) -> Box<Future<Item = Response, Error = Error> + Send> {
+        Box::new(self.simple_request(method, url, body, headers).map(Response))
     }
 }
 
@@ -376,7 +365,7 @@ impl<T: HttpClient> HttpClient for Box<T> {
         url: String,
         body: Option<String>,
         headers: Option<Headers>,
-    ) -> Box<Future<Item = Response, Error = FailureError> + Send> {
+    ) -> Box<Future<Item = Response, Error = Error> + Send> {
         (**self).request(method, url, body, headers)
     }
 }

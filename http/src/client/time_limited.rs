@@ -1,11 +1,10 @@
-use failure::Error;
 use futures::Future;
 use hyper::header::Headers;
 use std::cmp;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use super::{HttpClient, Response};
+use super::{Error, HttpClient, Response};
 use request_util::RequestTimeout as RequestTimeoutHeader;
 
 #[derive(Clone)]
@@ -13,12 +12,6 @@ pub struct TimeLimitedHttpClient<S: HttpClient> {
     inner: S,
     initial_time_limit: Duration,
     time_left: Arc<Mutex<Duration>>,
-}
-
-#[derive(Clone, Debug, Fail)]
-pub enum TimeLimitedHttpClientError {
-    #[fail(display = "Time limit for this client has been exceeded")]
-    TimeLimitExceeded,
 }
 
 impl<S: HttpClient> TimeLimitedHttpClient<S> {
@@ -47,7 +40,7 @@ impl<S: HttpClient> HttpClient for TimeLimitedHttpClient<S> {
         headers.set(RequestTimeoutHeader(time_left_before_request_ms.to_string()));
 
         if time_left_before_request == Duration::new(0, 0) {
-            return Box::new(futures::future::err(TimeLimitedHttpClientError::TimeLimitExceeded.into()));
+            return Box::new(futures::future::err(Error::Timeout));
         }
 
         debug!(
@@ -92,7 +85,6 @@ mod tests {
     use std::collections::VecDeque;
     use std::sync::{Arc, Mutex};
 
-    use failure::Error;
     use futures::future;
     use futures::prelude::*;
     use hyper;
@@ -251,15 +243,19 @@ mod tests {
         ) -> Box<Future<Item = Response, Error = Error> + Send> {
             let requests = self.requests.clone();
             let request_duration = { *self.request_duration.lock().unwrap() };
-            Box::new(tokio_timer::sleep(request_duration).map_err(Error::from).map(move |_| {
-                requests.lock().unwrap().push_back(Request {
-                    method,
-                    url,
-                    body,
-                    headers,
-                });
-                Response(String::new())
-            }))
+            Box::new(
+                tokio_timer::sleep(request_duration)
+                    .map_err(|_| Error::Unknown("Tokio timer error".to_string()))
+                    .map(move |_| {
+                        requests.lock().unwrap().push_back(Request {
+                            method,
+                            url,
+                            body,
+                            headers,
+                        });
+                        Response(String::new())
+                    }),
+            )
         }
     }
 }

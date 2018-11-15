@@ -1,9 +1,8 @@
-use failure::Error;
 use futures::Future;
 use hyper::header::Headers;
 use std::sync::{Arc, Mutex};
 
-use super::{HttpClient, Response};
+use super::{Error, HttpClient, Response};
 
 #[derive(Clone)]
 pub struct HttpClientWithDefaultHeaders<S: HttpClient> {
@@ -13,7 +12,10 @@ pub struct HttpClientWithDefaultHeaders<S: HttpClient> {
 
 impl<S: HttpClient> HttpClientWithDefaultHeaders<S> {
     pub fn new(client: S, headers: Headers) -> Self {
-        Self { inner: client, headers: Arc::new(Mutex::new(headers)) }
+        Self {
+            inner: client,
+            headers: Arc::new(Mutex::new(headers)),
+        }
     }
 }
 
@@ -42,7 +44,6 @@ mod tests {
     use std::collections::VecDeque;
     use std::sync::{Arc, Mutex};
 
-    use failure::Error;
     use futures::future;
     use futures::prelude::*;
     use hyper;
@@ -56,10 +57,8 @@ mod tests {
     fn new_headers_override_existing_headers() {
         //given
         let mock_client = MockHttpClient::new();
-        let client_with_old_default_headers =
-            HttpClientWithDefaultHeaders::new(mock_client.clone(), headers("old_auth"));
-        let client_with_new_headers =
-            HttpClientWithDefaultHeaders::new(client_with_old_default_headers, headers("new_auth"));
+        let client_with_old_default_headers = HttpClientWithDefaultHeaders::new(mock_client.clone(), headers("old_auth"));
+        let client_with_new_headers = HttpClientWithDefaultHeaders::new(client_with_old_default_headers, headers("new_auth"));
 
         run_sync(
             //when

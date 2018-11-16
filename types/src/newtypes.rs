@@ -83,13 +83,15 @@ i32_newtype!(CategoryId);
 i32_newtype!(CouponId);
 i32_newtype!(PickupId);
 i32_newtype!(ShippingId);
+i32_newtype!(ProdAttrId);
+i32_newtype!(AttributeValueId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
 string_newtype!(PageSlug);
 string_newtype!(Alpha2);
 string_newtype!(Alpha3);
-string_newtype!(AttributeValue);
+string_newtype!(AttributeValueCode);
 string_newtype!(CouponCode);
 
 pub mod stripe {

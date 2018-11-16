@@ -96,7 +96,7 @@ where
                                             .map_err(From::from)
                                             .and_then(move |bytes| {
                                                 {
-                                                    let body_log = match str::from_utf8(&bytes) { 
+                                                    let body_log = match str::from_utf8(&bytes) {
                                                         Ok(data) => data,
                                                         Err(_) => "`can not parse body to string`",
                                                     };

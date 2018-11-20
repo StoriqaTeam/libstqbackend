@@ -21,6 +21,7 @@ pub mod gender;
 pub mod language;
 pub mod moderation_status;
 pub mod order_status;
+pub mod project;
 pub mod provider;
 pub mod token_type;
 
@@ -32,5 +33,6 @@ pub use gender::*;
 pub use language::*;
 pub use moderation_status::*;
 pub use order_status::*;
+pub use project::*;
 pub use provider::*;
 pub use token_type::*;

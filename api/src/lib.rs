@@ -20,6 +20,7 @@ extern crate tokio_core;
 extern crate validator;
 #[macro_use]
 extern crate validator_derive;
+extern crate uuid;
 
 pub mod errors;
 pub mod orders;

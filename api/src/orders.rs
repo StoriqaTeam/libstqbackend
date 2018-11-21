@@ -4,6 +4,8 @@ use util::*;
 
 use chrono::prelude::*;
 use regex::Regex;
+use uuid::Uuid;
+
 use std::collections::HashMap;
 use stq_roles;
 use stq_router::{Builder as RouterBuilder, Router};
@@ -943,6 +945,7 @@ pub struct ConvertCartPayload {
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
     pub coupons: HashMap<CouponId, CouponInfo>,
     pub delivery_info: HashMap<ProductId, DeliveryInfo>,
+    pub uuid: Uuid,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Validate)]
@@ -962,6 +965,7 @@ pub struct BuyNow {
     pub pre_order_days: i32,
     pub coupon: Option<CouponInfo>,
     pub delivery_info: Option<DeliveryInfo>,
+    pub uuid: Uuid,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -1017,6 +1021,7 @@ pub trait OrderClient {
         receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
         delivery_info: HashMap<ProductId, DeliveryInfo>,
+        uuid: Uuid,
     ) -> ApiFuture<Vec<Order>>;
     fn create_buy_now(
         &self,
@@ -1059,6 +1064,7 @@ impl OrderClient for RestApiClient {
         receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
         delivery_info: HashMap<ProductId, DeliveryInfo>,
+        uuid: Uuid,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
             self.http_client
@@ -1073,6 +1079,7 @@ impl OrderClient for RestApiClient {
                     receiver_email,
                     coupons,
                     delivery_info,
+                    uuid,
                 })),
         )
     }

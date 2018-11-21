@@ -1,6 +1,11 @@
 use super::*;
 
+
+use std::fmt::{self, Debug, Display};
+use std::str::FromStr;
 use std::collections::HashSet;
+
+use uuid::{self, Uuid};
 use stq_static_resources::Currency;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -26,3 +31,69 @@ pub struct CartItem {
 }
 
 pub type Cart = HashSet<CartItem>;
+
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TransactionId(Uuid);
+
+impl TransactionId {
+    pub fn new(id: Uuid) -> Self {
+        TransactionId(id)
+    }
+
+    pub fn inner(&self) -> &Uuid {
+        &self.0
+    }
+
+    pub fn generate() -> Self {
+        TransactionId(Uuid::new_v4())
+    }
+
+    pub fn next(&self) -> Self {
+        let mut bytes = self.0.as_bytes().to_vec();
+        let last = bytes.len() - 1;
+        bytes[last] = bytes[last].wrapping_add(1);
+        let uuid = Uuid::from_bytes(&bytes).unwrap();
+        TransactionId(uuid)
+    }
+
+    pub fn prev(&self) -> Self {
+        let mut bytes = self.0.as_bytes().to_vec();
+        let last = bytes.len() - 1;
+        bytes[last] = bytes[last].wrapping_sub(1);
+        let uuid = Uuid::from_bytes(&bytes).unwrap();
+        TransactionId(uuid)
+    }
+
+    pub fn last_byte(&self) -> u8 {
+        let bytes = self.0.as_bytes().to_vec();
+        let last = bytes.len() - 1;
+        bytes[last]
+    }
+}
+
+impl FromStr for TransactionId {
+    type Err = uuid::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let id = Uuid::parse_str(s)?;
+        Ok(TransactionId::new(id))
+    }
+}
+
+impl Into<Uuid> for TransactionId {
+    fn into(self) -> Uuid {
+        self.0
+    }
+}
+
+impl Debug for TransactionId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl Display for TransactionId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&format!("{}", self.0.hyphenated()))
+    }
+}

@@ -154,6 +154,88 @@ impl Email for ApplyPasswordResetForUser {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StoreModerationStatusForUser {
+    pub store_email: String,
+    pub cluster_url: String,
+    pub store_id: String,
+}
+
+impl Email for StoreModerationStatusForUser {
+    fn into_send_mail(self) -> SimpleMail {
+        SimpleMail {
+            to: self.store_email,
+            subject: "The moderation status of the store has changed".to_string(),
+            text: format!(
+                "Store {} status has been changed. You can view current store info on <a href=\"{}/store/{}\">this page</a>.",
+                self.store_id, self.cluster_url, self.store_id
+            ),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BaseProductModerationStatusForUser {
+    pub store_email: String,
+    pub cluster_url: String,
+    pub base_product_id: String,
+    pub store_id: String,
+}
+
+impl Email for BaseProductModerationStatusForUser {
+    fn into_send_mail(self) -> SimpleMail {
+        SimpleMail {
+            to: self.store_email,
+            subject: "The moderation status of the base product has changed".to_string(),
+            text: format!(
+                "Base product {} status has been changed. You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                self.store_id, self.cluster_url, self.store_id, self.base_product_id
+            ),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct StoreModerationStatusForModerator {
+    pub user: EmailUser,
+    pub cluster_url: String,
+    pub store_id: String,
+}
+
+impl Email for StoreModerationStatusForModerator {
+    fn into_send_mail(self) -> SimpleMail {
+        SimpleMail {
+            to: self.user.email,
+            subject: "The moderation status of the store has changed".to_string(),
+            text: format!(
+                "Store {} status has been changed. You can view current store info on <a href=\"{}/store/{}\">this page</a>.",
+                self.store_id, self.cluster_url, self.store_id
+            ),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BaseProductModerationStatusForModerator {
+    pub user: EmailUser,
+    pub cluster_url: String,
+    pub store_id: String,
+    pub base_product_id: String,
+}
+
+impl Email for BaseProductModerationStatusForModerator {
+    fn into_send_mail(self) -> SimpleMail {
+        SimpleMail {
+            to: self.user.email,
+            subject: "The moderation status of the store has changed".to_string(),
+            text: format!(
+                "Store {} status has been changed. You can view current store info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                self.store_id, self.cluster_url, self.store_id, self.base_product_id
+            ),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ApplyEmailVerificationForUser {
     pub user: EmailUser,
 }
@@ -187,6 +269,14 @@ pub enum TemplateVariant {
     ApplyPasswordResetForUser,
     #[graphql(description = "apply email verification.")]
     ApplyEmailVerificationForUser,
+    #[graphql(description = "notify store manager about update moderation status the store.")]
+    StoreModerationStatusForUser,
+    #[graphql(description = "notify store manager about update moderation status the base product.")]
+    BaseProductModerationStatusForUser,
+    #[graphql(description = "notify moderator about update moderation status the store.")]
+    StoreModerationStatusForModerator,
+    #[graphql(description = "notify moderator about update moderation status the base product.")]
+    BaseProductModerationStatusForModerator,
 }
 
 impl FromStr for TemplateVariant {
@@ -201,6 +291,10 @@ impl FromStr for TemplateVariant {
             "password_reset_for_user" => Ok(TemplateVariant::PasswordResetForUser),
             "apply_password_reset_for_user" => Ok(TemplateVariant::ApplyPasswordResetForUser),
             "apply_email_verification_for_user" => Ok(TemplateVariant::ApplyEmailVerificationForUser),
+            "store_moderation_status_for_user" => Ok(TemplateVariant::StoreModerationStatusForUser),
+            "base_product_moderation_status_for_user" => Ok(TemplateVariant::BaseProductModerationStatusForUser),
+            "store_moderation_status_for_moderator" => Ok(TemplateVariant::StoreModerationStatusForModerator),
+            "base_product_moderation_status_for_moderator" => Ok(TemplateVariant::BaseProductModerationStatusForModerator),
             _ => Err(()),
         }
     }
@@ -217,6 +311,10 @@ impl fmt::Display for TemplateVariant {
             TemplateVariant::PasswordResetForUser => write!(f, "password_reset_for_user"),
             TemplateVariant::ApplyPasswordResetForUser => write!(f, "apply_password_reset_for_user"),
             TemplateVariant::ApplyEmailVerificationForUser => write!(f, "apply_email_verification_for_user"),
+            TemplateVariant::StoreModerationStatusForUser => write!(f, "store_moderation_status_for_user"),
+            TemplateVariant::BaseProductModerationStatusForUser => write!(f, "base_product_moderation_status_for_user"),
+            TemplateVariant::StoreModerationStatusForModerator => write!(f, "store_moderation_status_for_moderator"),
+            TemplateVariant::BaseProductModerationStatusForModerator => write!(f, "base_product_moderation_status_for_moderator"),
         }
     }
 }

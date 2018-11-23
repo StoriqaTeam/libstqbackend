@@ -226,10 +226,10 @@ impl Email for BaseProductModerationStatusForModerator {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: "The moderation status of the store has changed".to_string(),
+            subject: "The moderation status of the base product has changed".to_string(),
             text: format!(
-                "Store {} status has been changed. You can view current store info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
-                self.store_id, self.cluster_url, self.store_id, self.base_product_id
+                "Base product {} status has been changed. You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                self.base_product_id, self.cluster_url, self.store_id, self.base_product_id
             ),
         }
     }

@@ -277,6 +277,14 @@ pub enum TemplateVariant {
     StoreModerationStatusForModerator,
     #[graphql(description = "notify moderator about update moderation status the base product.")]
     BaseProductModerationStatusForModerator,
+    #[graphql(description = "email verification.")]
+    WalletEmailVerificationForUser,
+    #[graphql(description = "password reset.")]
+    WalletPasswordResetForUser,
+    #[graphql(description = "apply password reset.")]
+    WalletApplyPasswordResetForUser,
+    #[graphql(description = "apply email verification.")]
+    WalletApplyEmailVerificationForUser,
 }
 
 impl FromStr for TemplateVariant {
@@ -295,6 +303,10 @@ impl FromStr for TemplateVariant {
             "base_product_moderation_status_for_user" => Ok(TemplateVariant::BaseProductModerationStatusForUser),
             "store_moderation_status_for_moderator" => Ok(TemplateVariant::StoreModerationStatusForModerator),
             "base_product_moderation_status_for_moderator" => Ok(TemplateVariant::BaseProductModerationStatusForModerator),
+            "wallet_email_verification_for_user" => Ok(TemplateVariant::WalletEmailVerificationForUser),
+            "wallet_password_reset_for_user" => Ok(TemplateVariant::WalletPasswordResetForUser),
+            "wallet_apply_password_reset_for_user" => Ok(TemplateVariant::WalletApplyPasswordResetForUser),
+            "wallet_apply_email_verification_for_user" => Ok(TemplateVariant::WalletApplyEmailVerificationForUser),
             _ => Err(()),
         }
     }
@@ -315,6 +327,10 @@ impl fmt::Display for TemplateVariant {
             TemplateVariant::BaseProductModerationStatusForUser => write!(f, "base_product_moderation_status_for_user"),
             TemplateVariant::StoreModerationStatusForModerator => write!(f, "store_moderation_status_for_moderator"),
             TemplateVariant::BaseProductModerationStatusForModerator => write!(f, "base_product_moderation_status_for_moderator"),
+            TemplateVariant::WalletEmailVerificationForUser => write!(f, "wallet_email_verification_for_user"),
+            TemplateVariant::WalletPasswordResetForUser => write!(f, "wallet_password_reset_for_user"),
+            TemplateVariant::WalletApplyPasswordResetForUser => write!(f, "wallet_apply_password_reset_for_user"),
+            TemplateVariant::WalletApplyEmailVerificationForUser => write!(f, "wallet_apply_email_verification_for_user"),
         }
     }
 }

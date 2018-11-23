@@ -21,3 +21,4 @@ stq_types = { path = "../types" }
 tokio-core = "*"
 validator_derive = "*"
 validator = "*"
+uuid = { version = "0.6", features = ["serde", "v4"] }

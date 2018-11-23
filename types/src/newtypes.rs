@@ -93,6 +93,8 @@ string_newtype!(Alpha2);
 string_newtype!(Alpha3);
 string_newtype!(AttributeValueCode);
 string_newtype!(CouponCode);
+string_newtype!(BaseProductSlug);
+string_newtype!(StoreSlug);
 
 pub mod stripe {
     string_newtype!(SourceId);

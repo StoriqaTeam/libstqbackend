@@ -71,6 +71,13 @@ pub enum PageIdentifier {
     Slug(PageSlug),
 }
 
+/// Anything that can uniquely identify a store
+#[derive(Clone, Debug, Eq, From, PartialEq, Hash)]
+pub enum StoreIdentifier {
+    Id(StoreId),
+    Slug(StoreSlug),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, From, Hash, Serialize, Deserialize)]
 pub enum CartCustomer {
     User(UserId),

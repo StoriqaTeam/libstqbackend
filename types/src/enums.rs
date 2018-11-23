@@ -1,6 +1,7 @@
 use super::*;
 
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
 pub enum StoresRole {
@@ -10,11 +11,57 @@ pub enum StoresRole {
     PlatformAdmin,
 }
 
+impl FromStr for StoresRole {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "superuser" => Ok(StoresRole::Superuser),
+            "user" => Ok(StoresRole::User),
+            "moderator" => Ok(StoresRole::Moderator),
+            "platform_admin" => Ok(StoresRole::PlatformAdmin),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for StoresRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            StoresRole::Superuser => write!(f, "superuser"),
+            StoresRole::User => write!(f, "user"),
+            StoresRole::Moderator => write!(f, "moderator"),
+            StoresRole::PlatformAdmin => write!(f, "platform_admin"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
 pub enum UsersRole {
     Superuser,
     User,
     Moderator,
+}
+
+impl FromStr for UsersRole {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "superuser" => Ok(UsersRole::Superuser),
+            "user" => Ok(UsersRole::User),
+            "moderator" => Ok(UsersRole::Moderator),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for UsersRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            UsersRole::Superuser => write!(f, "superuser"),
+            UsersRole::User => write!(f, "user"),
+            UsersRole::Moderator => write!(f, "moderator"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
@@ -24,11 +71,55 @@ pub enum BillingRole {
     StoreManager,
 }
 
+impl FromStr for BillingRole {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "superuser" => Ok(BillingRole::Superuser),
+            "user" => Ok(BillingRole::User),
+            "store_manager" => Ok(BillingRole::StoreManager),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for BillingRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BillingRole::Superuser => write!(f, "superuser"),
+            BillingRole::User => write!(f, "user"),
+            BillingRole::StoreManager => write!(f, "store_manager"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
 pub enum DeliveryRole {
     Superuser,
     User,
     StoreManager,
+}
+
+impl FromStr for DeliveryRole {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "superuser" => Ok(DeliveryRole::Superuser),
+            "user" => Ok(DeliveryRole::User),
+            "store_manager" => Ok(DeliveryRole::StoreManager),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for DeliveryRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DeliveryRole::Superuser => write!(f, "superuser"),
+            DeliveryRole::User => write!(f, "user"),
+            DeliveryRole::StoreManager => write!(f, "store_manager"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
@@ -38,11 +129,55 @@ pub enum OrderRole {
     StoreManager,
 }
 
+impl FromStr for OrderRole {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "superuser" => Ok(OrderRole::Superuser),
+            "user" => Ok(OrderRole::User),
+            "store_manager" => Ok(OrderRole::StoreManager),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for OrderRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            OrderRole::Superuser => write!(f, "superuser"),
+            OrderRole::User => write!(f, "user"),
+            OrderRole::StoreManager => write!(f, "store_manager"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
 pub enum WarehouseRole {
     Superuser,
     User,
     StoreManager,
+}
+
+impl FromStr for WarehouseRole {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "superuser" => Ok(WarehouseRole::Superuser),
+            "user" => Ok(WarehouseRole::User),
+            "store_manager" => Ok(WarehouseRole::StoreManager),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for WarehouseRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            WarehouseRole::Superuser => write!(f, "superuser"),
+            WarehouseRole::User => write!(f, "user"),
+            WarehouseRole::StoreManager => write!(f, "store_manager"),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]

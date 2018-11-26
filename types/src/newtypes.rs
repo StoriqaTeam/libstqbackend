@@ -35,6 +35,12 @@ macro_rules! string_newtype {
             Clone, Debug, Display, Default, PartialEq, Eq, PartialOrd, Ord, From, FromStr, Into, Hash, Serialize, Deserialize, DieselTypes,
         )]
         pub struct $x(pub String);
+
+        impl std::convert::AsRef<str> for $x {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
     };
 }
 macro_rules! uuid_newtype {
@@ -95,6 +101,7 @@ string_newtype!(AttributeValueCode);
 string_newtype!(CouponCode);
 string_newtype!(BaseProductSlug);
 string_newtype!(StoreSlug);
+string_newtype!(CategorySlug);
 
 pub mod stripe {
     string_newtype!(SourceId);

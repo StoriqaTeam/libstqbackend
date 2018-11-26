@@ -1,6 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
+use moderation_status::ModerationStatus;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SimpleMail {
     pub to: String,
@@ -158,16 +160,17 @@ pub struct StoreModerationStatusForUser {
     pub store_email: String,
     pub cluster_url: String,
     pub store_id: String,
+    pub status: ModerationStatus,
 }
 
 impl Email for StoreModerationStatusForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.store_email,
-            subject: "The moderation status of the store has changed".to_string(),
+            subject: format!("The moderation status of the store has changed. New status {}", self.status),
             text: format!(
-                "Store {} status has been changed. You can view current store info on <a href=\"{}/store/{}\">this page</a>.",
-                self.store_id, self.cluster_url, self.store_id
+                "Store {} status has been changed. <br> New status {}. <br> You can view current store info on <a href=\"{}/store/{}\">this page</a>.",
+                self.store_id, self.status, self.cluster_url, self.store_id
             ),
         }
     }
@@ -179,16 +182,17 @@ pub struct BaseProductModerationStatusForUser {
     pub cluster_url: String,
     pub base_product_id: String,
     pub store_id: String,
+    pub status: ModerationStatus,
 }
 
 impl Email for BaseProductModerationStatusForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.store_email,
-            subject: "The moderation status of the base product has changed".to_string(),
+            subject: format!("The moderation status of the base product has changed. New status {}.", self.status),
             text: format!(
-                "Base product {} status has been changed. You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
-                self.store_id, self.cluster_url, self.store_id, self.base_product_id
+                "Base product {} status has been changed. <br> New status {}. <br> You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                self.store_id, self.status, self.cluster_url, self.store_id, self.base_product_id
             ),
         }
     }
@@ -199,16 +203,17 @@ pub struct StoreModerationStatusForModerator {
     pub user: EmailUser,
     pub cluster_url: String,
     pub store_id: String,
+    pub status: ModerationStatus,
 }
 
 impl Email for StoreModerationStatusForModerator {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: "The moderation status of the store has changed".to_string(),
+            subject: format!("The moderation status of the store has changed. New status {}.", self.status),
             text: format!(
-                "Store {} status has been changed. You can view current store info on <a href=\"{}/store/{}\">this page</a>.",
-                self.store_id, self.cluster_url, self.store_id
+                "Store {} status has been changed. <br> New status {}. <br> You can view current store info on <a href=\"{}/store/{}\">this page</a>.",
+                self.store_id, self.status, self.cluster_url, self.store_id
             ),
         }
     }
@@ -220,16 +225,17 @@ pub struct BaseProductModerationStatusForModerator {
     pub cluster_url: String,
     pub store_id: String,
     pub base_product_id: String,
+    pub status: ModerationStatus,
 }
 
 impl Email for BaseProductModerationStatusForModerator {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: "The moderation status of the base product has changed".to_string(),
+            subject: format!("The moderation status of the base product has changed. New status {}.", self.status),
             text: format!(
-                "Base product {} status has been changed. You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
-                self.base_product_id, self.cluster_url, self.store_id, self.base_product_id
+                "Base product {} status has been changed. <br> New status {}. <br> You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                self.base_product_id, self.status, self.cluster_url, self.store_id, self.base_product_id
             ),
         }
     }

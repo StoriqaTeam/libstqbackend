@@ -11,26 +11,6 @@ pub enum ModerationStatus {
     Published,
 }
 
-#[derive(GraphQLEnum, Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, EnumIterator)]
-#[graphql(name = "Status", description = "Current moderation status")]
-pub enum ModerationStatusForModerator {
-    Moderation,
-    Decline,
-    Blocked,
-    Published,
-}
-
-impl From<ModerationStatusForModerator> for ModerationStatus {
-    fn from(status: ModerationStatusForModerator) -> Self {
-        match status {
-            ModerationStatusForModerator::Moderation => ModerationStatus::Moderation,
-            ModerationStatusForModerator::Decline => ModerationStatus::Decline,
-            ModerationStatusForModerator::Blocked => ModerationStatus::Blocked,
-            ModerationStatusForModerator::Published => ModerationStatus::Published,
-        }
-    }
-}
-
 impl FromStr for ModerationStatus {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {

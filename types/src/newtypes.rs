@@ -91,6 +91,7 @@ i32_newtype!(PickupId);
 i32_newtype!(ShippingId);
 i32_newtype!(ProdAttrId);
 i32_newtype!(AttributeValueId);
+i32_newtype!(EmarsysId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);

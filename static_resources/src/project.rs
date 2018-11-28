@@ -28,6 +28,12 @@ impl fmt::Display for Project {
     }
 }
 
+impl Default for Project {
+    fn default() -> Project {
+        Project::MarketPlace
+    }
+}
+
 impl Project {
     pub fn as_vec() -> Vec<Project> {
         Project::enum_iter().collect()

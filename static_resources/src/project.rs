@@ -29,7 +29,7 @@ impl fmt::Display for Project {
 }
 
 impl Default for Project {
-    fn defaul() -> Project {
+    fn default() -> Project {
         Project::MarketPlace
     }
 }

@@ -89,6 +89,7 @@ i32_newtype!(CategoryId);
 i32_newtype!(CouponId);
 i32_newtype!(PickupId);
 i32_newtype!(ShippingId);
+i32_newtype!(ShippingRatesId);
 i32_newtype!(ProdAttrId);
 i32_newtype!(AttributeValueId);
 i32_newtype!(EmarsysId);

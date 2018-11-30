@@ -189,10 +189,10 @@ impl Email for BaseProductModerationStatusForUser {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.store_email,
-            subject: format!("The moderation status of the base product has changed. New status {}.", self.status),
+            subject: format!("The moderation status of the product has changed. New status {}.", self.status),
             text: format!(
-                "Base product {} status has been changed. <br> New status {}. <br> You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
-                self.store_id, self.status, self.cluster_url, self.store_id, self.base_product_id
+                "Product {} status has been changed. <br> New status {}. <br> You can view current product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                self.base_product_id, self.status, self.cluster_url, self.store_id, self.base_product_id
             ),
         }
     }
@@ -232,9 +232,9 @@ impl Email for BaseProductModerationStatusForModerator {
     fn into_send_mail(self) -> SimpleMail {
         SimpleMail {
             to: self.user.email,
-            subject: format!("The moderation status of the base product has changed. New status {}.", self.status),
+            subject: format!("The moderation status of the product has changed. New status {}.", self.status),
             text: format!(
-                "Base product {} status has been changed. <br> New status {}. <br> You can view current base product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
+                "Product {} status has been changed. <br> New status {}. <br> You can view current product info on <a href=\"{}/store/{}/products/{}\">this page</a>.",
                 self.base_product_id, self.status, self.cluster_url, self.store_id, self.base_product_id
             ),
         }

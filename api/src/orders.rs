@@ -905,7 +905,7 @@ pub struct Order {
     pub company_package_id: Option<CompanyPackageId>,
     pub delivery_price: f64,
     pub shipping_id: Option<ShippingId>,
-    pub product_cashback: Option<f64>,
+    pub product_cashback: Option<CashbackPercent>,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
@@ -936,7 +936,7 @@ pub struct DeliveryInfo {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ProductInfo {
     pub base_product_id: BaseProductId,
-    pub cashback: Option<f64>,
+    pub cashback: Option<CashbackPercent>,
     pub pre_order: bool,
     pub pre_order_days: i32,
 }

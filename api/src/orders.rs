@@ -905,6 +905,7 @@ pub struct Order {
     pub company_package_id: Option<CompanyPackageId>,
     pub delivery_price: f64,
     pub shipping_id: Option<ShippingId>,
+    pub product_cashback: Option<f64>,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
@@ -932,6 +933,14 @@ pub struct DeliveryInfo {
     pub price: f64,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ProductInfo {
+    pub base_product_id: BaseProductId,
+    pub cashback: Option<f64>,
+    pub pre_order: bool,
+    pub pre_order_days: i32,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Validate)]
 pub struct ConvertCartPayload {
     pub conversion_id: Option<ConversionId>,
@@ -945,6 +954,7 @@ pub struct ConvertCartPayload {
     pub seller_prices: HashMap<ProductId, ProductSellerPrice>,
     pub coupons: HashMap<CouponId, CouponInfo>,
     pub delivery_info: HashMap<ProductId, DeliveryInfo>,
+    pub product_info: HashMap<ProductId, ProductInfo>,
     pub uuid: Uuid,
 }
 
@@ -965,6 +975,7 @@ pub struct BuyNow {
     pub pre_order_days: i32,
     pub coupon: Option<CouponInfo>,
     pub delivery_info: Option<DeliveryInfo>,
+    pub product_info: ProductInfo,
     pub uuid: Uuid,
 }
 
@@ -1021,6 +1032,7 @@ pub trait OrderClient {
         receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
         delivery_info: HashMap<ProductId, DeliveryInfo>,
+        product_info: HashMap<ProductId, ProductInfo>,
         uuid: Uuid,
     ) -> ApiFuture<Vec<Order>>;
     fn create_buy_now(
@@ -1064,6 +1076,7 @@ impl OrderClient for RestApiClient {
         receiver_email: String,
         coupons: HashMap<CouponId, CouponInfo>,
         delivery_info: HashMap<ProductId, DeliveryInfo>,
+        product_info: HashMap<ProductId, ProductInfo>,
         uuid: Uuid,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
@@ -1079,6 +1092,7 @@ impl OrderClient for RestApiClient {
                     receiver_email,
                     coupons,
                     delivery_info,
+                    product_info,
                     uuid,
                 })),
         )

@@ -127,3 +127,4 @@ uuid_newtype!(PageId);
 
 f64_newtype!(ProductPrice);
 f64_newtype!(ExchangeRate);
+f64_newtype!(CashbackPercent);

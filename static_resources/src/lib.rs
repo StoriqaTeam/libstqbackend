@@ -14,6 +14,7 @@ extern crate enum_iter;
 extern crate postgres_protocol;
 
 pub mod attribute_type;
+pub mod committer_role;
 pub mod currency;
 pub mod devices;
 pub mod emails;
@@ -26,6 +27,7 @@ pub mod provider;
 pub mod token_type;
 
 pub use attribute_type::*;
+pub use committer_role::*;
 pub use currency::Currency;
 pub use devices::*;
 pub use emails::*;

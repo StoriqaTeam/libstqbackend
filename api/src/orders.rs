@@ -9,7 +9,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 use stq_roles;
 use stq_router::{Builder as RouterBuilder, Router};
-use stq_static_resources::{Currency, OrderState};
+use stq_static_resources::{CommitterRole, Currency, OrderState};
 use stq_types::*;
 use validator::{Validate, ValidationError};
 
@@ -1018,6 +1018,7 @@ pub struct OrderDiff {
     pub committed_at: DateTime<Utc>,
     pub state: OrderState,
     pub comment: Option<String>,
+    pub committer_role: CommitterRole,
 }
 
 pub trait OrderClient {

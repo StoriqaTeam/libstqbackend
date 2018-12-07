@@ -1053,6 +1053,7 @@ pub trait OrderClient {
         state: OrderState,
         comment: Option<String>,
         track_id: Option<String>,
+        committer_role: CommitterRole,
     ) -> ApiFuture<Option<Order>>;
     /// Search using the terms provided.
     fn search(&self, terms: OrderSearchTerms) -> ApiFuture<Vec<Order>>;
@@ -1063,6 +1064,7 @@ pub struct UpdateStatePayload {
     pub state: OrderState,
     pub track_id: Option<String>,
     pub comment: Option<String>,
+    pub committer_role: CommitterRole,
 }
 
 impl OrderClient for RestApiClient {
@@ -1157,6 +1159,7 @@ impl OrderClient for RestApiClient {
         state: OrderState,
         comment: Option<String>,
         track_id: Option<String>,
+        committer_role: CommitterRole,
     ) -> ApiFuture<Option<Order>> {
         http_req(
             self.http_client
@@ -1165,6 +1168,7 @@ impl OrderClient for RestApiClient {
                     state,
                     comment,
                     track_id,
+                    committer_role,
                 })),
         )
     }

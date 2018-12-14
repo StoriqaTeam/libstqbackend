@@ -93,9 +93,9 @@ pub fn init(graylog_config: Option<&GrayLogConfig>) {
             logger.set_default_metadata(String::from("cluster"), cluster.clone());
         }
 
-        // separate logs 
+        // separate logs
         logger.set_default_metadata("source_type", "backend");
-        
+
         combined_logger.inner.push(Arc::new(logger));
     }
 

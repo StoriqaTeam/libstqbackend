@@ -173,7 +173,7 @@ pub enum Range<T> {
     From(RangeLimit<T>),
     To(RangeLimit<T>),
     Between((RangeLimit<T>, RangeLimit<T>)),
-    In(Vec<T>)
+    In(Vec<T>),
 }
 
 impl<T> From<T> for Range<T> {
@@ -252,12 +252,7 @@ impl FilteredOperationBuilder {
                     Box::new(to.value),
                 ),
             ],
-            In(values) => vec![
-                (
-                    ComparisonMode::IN,
-                    Box::new(values),
-                )
-            ]
+            In(values) => vec![(ComparisonMode::IN, Box::new(values))],
         };
 
         self.filters.insert(column, new_filters);
@@ -506,9 +501,10 @@ mod tests {
                         },
                     )),
                 ),
-        ).with_value("value_column1", 1)
-            .with_value("value_column2", 2)
-            .build();
+        )
+        .with_value("value_column1", 1)
+        .with_value("value_column2", 2)
+        .build();
 
         let expectation = (
             "UPDATE my_table SET value_column1 = $1, value_column2 = $2 WHERE filter_column1 = $3 AND filter_column2 > $4 AND filter_column2 <= $5 RETURNING *;",

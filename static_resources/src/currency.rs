@@ -64,8 +64,8 @@ impl FromStr for Currency {
             FieldError::new(
                 "Unknown Currency",
                 graphql_value!({ "code": 300, "details": {
-                        format!("Can not resolve Currency name. Unknown Currency: '{}'", s)
-                        }}),
+                format!("Can not resolve Currency name. Unknown Currency: '{}'", s)
+                }}),
             )
         })
     }

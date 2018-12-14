@@ -107,7 +107,8 @@ mod tests {
                 .then(|result| {
                     result.expect("First request should have succeeded");
                     timed_client_clone.request(Method::Get, "url2".to_string(), None, None)
-                }).then(|result| {
+                })
+                .then(|result| {
                     result.expect_err("Second request should have timed out");
                     future::ok::<(), Error>(())
                 }),

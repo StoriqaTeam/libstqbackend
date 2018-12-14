@@ -43,7 +43,10 @@ where
     }
 
     pub fn with_ttl(self, ttl: Duration) -> Self {
-        RedisCache { ttl: Some(ttl), ..self }
+        RedisCache {
+            ttl: Some(ttl),
+            ..self
+        }
     }
 
     fn make_redis_key(&self, key: &str) -> String {
@@ -74,13 +77,17 @@ where
 
     fn set(&self, key: &str, value: String) -> Result<(), Self::Error> {
         self.using_connection(|conn| match self.ttl {
-            None => cmd("SET").arg(self.make_redis_key(key)).arg(&value).query(conn),
+            None => cmd("SET")
+                .arg(self.make_redis_key(key))
+                .arg(&value)
+                .query(conn),
             Some(ttl) => cmd("SETEX")
                 .arg(self.make_redis_key(key))
                 .arg(ttl.as_secs())
                 .arg(&value)
                 .query(conn),
-        }).and_then(|res| res.map_err(From::from))
+        })
+        .and_then(|res| res.map_err(From::from))
     }
 
     fn remove(&self, key: &str) -> Result<bool, Self::Error> {
@@ -89,6 +96,7 @@ where
                 .arg(self.make_redis_key(key))
                 .query(conn)
                 .map(|keys_removed: u32| if keys_removed > 0 { true } else { false })
-        }).and_then(|res| res.map_err(From::from))
+        })
+        .and_then(|res| res.map_err(From::from))
     }
 }

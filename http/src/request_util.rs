@@ -42,7 +42,8 @@ where
                     serde_json::from_value(serde_json::Value::Null)
                 } else {
                     serde_json::from_str::<T>(&body)
-                }.map_err(move |err| {
+                }
+                .map_err(move |err| {
                     err.context(format!("Failed to parse as JSON: {}", body))
                         .context(ParseError::ConvertError)
                         .into()
@@ -57,7 +58,8 @@ pub fn read_body(body: hyper::Body) -> Box<Future<Item = String, Error = hyper::
         body.fold(Vec::new(), |mut acc, chunk| {
             acc.extend_from_slice(&*chunk);
             future::ok::<_, hyper::Error>(acc)
-        }).and_then(|bytes| match String::from_utf8(bytes) {
+        })
+        .and_then(|bytes| match String::from_utf8(bytes) {
             Ok(data) => future::ok(data),
             Err(err) => future::err(hyper::Error::Utf8(err.utf8_error())),
         }),

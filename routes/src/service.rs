@@ -47,8 +47,8 @@ impl FromStr for Service {
             _ => Err(FieldError::new(
                 "Unknown service",
                 graphql_value!({ "code": 300, "details": {
-                        format!("Can not resolve service name. Unknown service: '{}'", s)
-                        }}),
+                format!("Can not resolve service name. Unknown service: '{}'", s)
+                }}),
             )),
         }
     }

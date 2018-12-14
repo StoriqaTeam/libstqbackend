@@ -116,8 +116,8 @@ impl FromStr for Model {
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
-                        format!("Can not resolve model name. Unknown model: '{}'", s)
-                        }}),
+                format!("Can not resolve model name. Unknown model: '{}'", s)
+                }}),
             )),
         }
     }

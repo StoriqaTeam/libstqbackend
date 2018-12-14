@@ -1,12 +1,11 @@
 use super::*;
 
-
+use std::collections::HashSet;
 use std::fmt::{self, Debug, Display};
 use std::str::FromStr;
-use std::collections::HashSet;
 
-use uuid::{self, Uuid};
 use stq_static_resources::Currency;
+use uuid::{self, Uuid};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ProductSellerPrice {

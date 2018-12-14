@@ -12,14 +12,19 @@ fn test_redis_cache() {
         .map(|(_k, v)| v)
         .unwrap_or("redis://127.0.0.1/".to_string());
 
-    let manager = RedisConnectionManager::new(redis_url.as_ref()).expect("Failed to create connection manager");
+    let manager = RedisConnectionManager::new(redis_url.as_ref())
+        .expect("Failed to create connection manager");
 
-    let pool = Pool::builder().build(manager).expect("Failed to create connection pool");
+    let pool = Pool::builder()
+        .build(manager)
+        .expect("Failed to create connection pool");
 
     let ttl = Duration::from_secs(3);
     let cache = RedisCache::new(pool.clone(), "base_key".to_string()).with_ttl(ttl);
 
-    cache.set("key", "value".to_string()).expect("Failed to set value");
+    cache
+        .set("key", "value".to_string())
+        .expect("Failed to set value");
 
     let cached_value = cache
         .get("key")
@@ -30,10 +35,14 @@ fn test_redis_cache() {
     let existing_key_was_deleted = cache.remove("key").expect("Failed to delete value");
     assert!(existing_key_was_deleted);
 
-    let non_existing_key_was_deleted = cache.remove("non_existing_key").expect("Failed to attempt to delete value");
+    let non_existing_key_was_deleted = cache
+        .remove("non_existing_key")
+        .expect("Failed to attempt to delete value");
     assert!(!non_existing_key_was_deleted);
 
-    cache.set("key_2", "value_2".to_string()).expect("Failed to set value");
+    cache
+        .set("key_2", "value_2".to_string())
+        .expect("Failed to set value");
     cache
         .get("key_2")
         .expect("Failed to get value")

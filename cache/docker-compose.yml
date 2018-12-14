@@ -1,7 +1,7 @@
 version: "3"
 services:
   stq_cache_test:
-    image: rust:1.30-stretch
+    image: rust:1.31-stretch
     command: sh -c "cargo build && cargo test"
     environment:
       - CARGO_TARGET_DIR=/target

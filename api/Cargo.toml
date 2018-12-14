@@ -6,7 +6,7 @@ version = "0.1.0"
 chrono = { version = "*", features = ["serde"] }
 failure = "0.1"
 futures = "0.1"
-geo = { version = "*", features = ["use-serde"] }
+geo = { version = "0.10", features = ["use-serde"] }
 hyper = "0.12"
 lazy_static = "*"
 regex = "*"

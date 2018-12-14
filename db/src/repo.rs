@@ -149,7 +149,8 @@ where
     future::join_all(items.into_iter().map({
         let acl_engine = acl_engine.clone();
         move |entity| acl_engine.ensure_access((entity, action)).map(|(entity, _)| entity)
-    })).then(move |res| match res {
+    }))
+    .then(move |res| match res {
         Ok(items) => Ok((items, conn)),
         Err((e, _ctx)) => Err((e, conn)),
     })
@@ -411,4 +412,5 @@ where
     F: Filter,
     I: Inserter,
     U: Updater,
-{}
+{
+}

@@ -55,18 +55,26 @@ where
             .map_err(|e| TypedCacheError::BackendCacheError(e))
             .and_then(|json_opt| match json_opt {
                 None => Ok(None),
-                Some(json) => serde_json::from_str(&json).map(Some).map_err(|e| TypedCacheError::JsonError(e)),
+                Some(json) => serde_json::from_str(&json)
+                    .map(Some)
+                    .map_err(|e| TypedCacheError::JsonError(e)),
             })
     }
 
     fn set(&self, key: &str, value: T) -> Result<(), Self::Error> {
         serde_json::to_string(&value)
             .map_err(|e| TypedCacheError::JsonError(e))
-            .and_then(|json| self.backend.set(key, json).map_err(|e| TypedCacheError::BackendCacheError(e)))
+            .and_then(|json| {
+                self.backend
+                    .set(key, json)
+                    .map_err(|e| TypedCacheError::BackendCacheError(e))
+            })
     }
 
     fn remove(&self, key: &str) -> Result<bool, Self::Error> {
-        self.backend.remove(key).map_err(|e| TypedCacheError::BackendCacheError(e))
+        self.backend
+            .remove(key)
+            .map_err(|e| TypedCacheError::BackendCacheError(e))
     }
 }
 
@@ -91,7 +99,9 @@ mod tests {
             i: 10,
         };
 
-        typed_cache.set(key, original_value.clone()).expect("Failed to set value");
+        typed_cache
+            .set(key, original_value.clone())
+            .expect("Failed to set value");
         let value_from_cache = typed_cache
             .get(key)
             .expect("Failed to get value")
@@ -101,7 +111,9 @@ mod tests {
         let value_was_removed = typed_cache.remove(key).expect("Failed to remove value");
         assert!(value_was_removed);
 
-        let non_existent_value_was_removed = typed_cache.remove(key).expect("Failed to attempt to remove value");
+        let non_existent_value_was_removed = typed_cache
+            .remove(key)
+            .expect("Failed to attempt to remove value");
         assert!(!non_existent_value_was_removed);
 
         let missing_value = typed_cache.get(key).expect("Failed to get value");

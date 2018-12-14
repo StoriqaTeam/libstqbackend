@@ -52,7 +52,8 @@ pub trait HttpClient: Send + Sync + 'static {
                 serde_json::from_value(serde_json::Value::Null)
             } else {
                 serde_json::from_str::<T>(&response.0)
-            }.map_err(|e| Error::Parse(e.to_string()))
+            }
+            .map_err(|e| Error::Parse(e.to_string()))
         }))
     }
 }
@@ -202,7 +203,8 @@ impl Client {
                         future::err(error)
                     })),
                 }
-            }).then(|result| callback.send(result))
+            })
+            .then(|result| callback.send(result))
             .map(|_| ())
             .map_err(|err| {
                 error!("Failed to send a response to the oneshot callback channel: {:?}", err);
@@ -253,7 +255,8 @@ impl ClientHandle {
                 serde_json::from_value(serde_json::Value::Null)
             } else {
                 serde_json::from_str::<T>(&response)
-            }.map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
+            }
+            .map_err(|err| Error::Parse(format!("Parsing response {:?} failed with error {}", response, err)))
         }))
     }
 
@@ -338,7 +341,8 @@ impl ClientHandle {
             .map_err(|err| Error::Unknown(format!("Unexpected error sending http client request params to channel: {}", err)))
             .and_then(|_| {
                 rx.map_err(|err| Error::Unknown(format!("Unexpected error receiving http client response from channel: {}", err)))
-            }).and_then(|result| result)
+            })
+            .and_then(|result| result)
             .map_err(move |err| {
                 error!("{} {} : {}", method_clone, url_clone, err);
                 err

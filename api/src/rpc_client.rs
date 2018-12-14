@@ -63,7 +63,8 @@ impl RestApiClient {
                 HeaderValue::from_str(&v.to_string()).unwrap(),
             )],
             None => vec![],
-        }.into_iter()
+        }
+        .into_iter()
         .collect::<HeaderMap>()
     }
 

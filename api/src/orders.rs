@@ -214,44 +214,23 @@ impl RouteBuilder for Route {
 impl Route {
     pub fn from_path(s: &str) -> Option<Self> {
         lazy_static! {
-            static ref ROUTER: Router<Route> = stq_roles::routing::add_routes(
-                RouterBuilder::default()
-            ).with_route(r"^/cart/by-user/(\d+)$", |params| {
-                params
-                    .into_iter()
-                    .next()
-                    .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
-                    .map(|customer| Route::Cart { customer })
-            })
-                .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)$", |params| params
-                    .into_iter()
-                    .next()
-                    .and_then(|string_id| string_id.parse().ok().map(CartCustomer::Anonymous))
-                    .map(|customer| Route::Cart { customer }))
-                .with_route(r"^/cart/by-user/(\d+)/products/(\d+)$", |params| {
-                    let mut params = params.into_iter();
-                    if let Some(customer_id_s) = params.next() {
-                        if let Some(product_id_s) = params.next() {
-                            if let Ok(customer) = customer_id_s.parse().map(CartCustomer::User) {
-                                if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                    return Some(Route::CartProduct {
-                                        customer,
-                                        product_id,
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    None
-                })
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)$",
-                    |params| {
+            static ref ROUTER: Router<Route> =
+                stq_roles::routing::add_routes(RouterBuilder::default())
+                    .with_route(r"^/cart/by-user/(\d+)$", |params| params
+                        .into_iter()
+                        .next()
+                        .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
+                        .map(|customer| Route::Cart { customer }))
+                    .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)$", |params| params
+                        .into_iter()
+                        .next()
+                        .and_then(|string_id| string_id.parse().ok().map(CartCustomer::Anonymous))
+                        .map(|customer| Route::Cart { customer }))
+                    .with_route(r"^/cart/by-user/(\d+)/products/(\d+)$", |params| {
                         let mut params = params.into_iter();
                         if let Some(customer_id_s) = params.next() {
                             if let Some(product_id_s) = params.next() {
-                                if let Ok(customer) =
-                                    customer_id_s.parse().map(CartCustomer::Anonymous)
+                                if let Ok(customer) = customer_id_s.parse().map(CartCustomer::User)
                                 {
                                     if let Ok(product_id) = product_id_s.parse().map(ProductId) {
                                         return Some(Route::CartProduct {
@@ -263,173 +242,176 @@ impl Route {
                             }
                         }
                         None
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-user/(\d+)/products/(\d+)/increment$",
-                    |params| {
+                    })
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::Anonymous)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartProduct {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-user/(\d+)/products/(\d+)/increment$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::User)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartIncrementProduct {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-user/(\d+)/products/(\d+)/coupon/(\d+)$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                            let product_id = params.next()?.parse().ok().map(ProductId)?;
+                            let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                            Some(Route::AddCartCoupon {
+                                customer,
+                                product_id,
+                                coupon_id,
+                            })
+                        }
+                    )
+                    .with_route(r"^/cart/by-user/(\d+)/coupons/(\d+)$", |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                        Some(Route::DeleteCartCoupon {
+                            customer,
+                            coupon_id,
+                        })
+                    })
+                    .with_route(r"^/cart/by-user/(\d+)/products/(\d+)/coupons$", |params| {
+                        let mut params = params.into_iter();
+                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                        let product_id = params.next()?.parse().ok().map(ProductId)?;
+                        Some(Route::DeleteCartCouponByProduct {
+                            customer,
+                            product_id,
+                        })
+                    })
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/coupon/(\d+)$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            let customer =
+                                params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                            let product_id = params.next()?.parse().ok().map(ProductId)?;
+                            let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                            Some(Route::AddCartCoupon {
+                                customer,
+                                product_id,
+                                coupon_id,
+                            })
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/coupons/(\d+)$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            let customer =
+                                params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                            let coupon_id = params.next()?.parse().ok().map(CouponId)?;
+                            Some(Route::DeleteCartCoupon {
+                                customer,
+                                coupon_id,
+                            })
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/coupons$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            let customer =
+                                params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                            let product_id = params.next()?.parse().ok().map(ProductId)?;
+                            Some(Route::DeleteCartCouponByProduct {
+                                customer,
+                                product_id,
+                            })
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-user/(\d+)/products/(\d+)/delivery_method$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
+                            let product_id = params.next()?.parse().ok().map(ProductId)?;
+                            Some(Route::CartProductDeliveryMethod {
+                                customer,
+                                product_id,
+                            })
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/delivery_method$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            let customer =
+                                params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
+                            let product_id = params.next()?.parse().ok().map(ProductId)?;
+                            Some(Route::CartProductDeliveryMethod {
+                                customer,
+                                product_id,
+                            })
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/increment$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::Anonymous)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartIncrementProduct {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(r"^/cart/by-user/(\d+)/products/(\d+)/quantity$", |params| {
                         let mut params = params.into_iter();
                         if let Some(customer_id_s) = params.next() {
                             if let Some(product_id_s) = params.next() {
                                 if let Ok(customer) = customer_id_s.parse().map(CartCustomer::User)
-                                {
-                                    if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                        return Some(Route::CartIncrementProduct {
-                                            customer,
-                                            product_id,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        None
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-user/(\d+)/products/(\d+)/coupon/(\d+)$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
-                        let product_id = params.next()?.parse().ok().map(ProductId)?;
-                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
-                        Some(Route::AddCartCoupon {
-                            customer,
-                            product_id,
-                            coupon_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-user/(\d+)/coupons/(\d+)$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
-                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
-                        Some(Route::DeleteCartCoupon {
-                            customer,
-                            coupon_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-user/(\d+)/products/(\d+)/coupons$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
-                        let product_id = params.next()?.parse().ok().map(ProductId)?;
-                        Some(Route::DeleteCartCouponByProduct {
-                            customer,
-                            product_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/coupon/(\d+)$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
-                        let product_id = params.next()?.parse().ok().map(ProductId)?;
-                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
-                        Some(Route::AddCartCoupon {
-                            customer,
-                            product_id,
-                            coupon_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/coupons/(\d+)$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
-                        let coupon_id = params.next()?.parse().ok().map(CouponId)?;
-                        Some(Route::DeleteCartCoupon {
-                            customer,
-                            coupon_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/coupons$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
-                        let product_id = params.next()?.parse().ok().map(ProductId)?;
-                        Some(Route::DeleteCartCouponByProduct {
-                            customer,
-                            product_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-user/(\d+)/products/(\d+)/delivery_method$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::User)?;
-                        let product_id = params.next()?.parse().ok().map(ProductId)?;
-                        Some(Route::CartProductDeliveryMethod {
-                            customer,
-                            product_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/delivery_method$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        let customer = params.next()?.parse().ok().map(CartCustomer::Anonymous)?;
-                        let product_id = params.next()?.parse().ok().map(ProductId)?;
-                        Some(Route::CartProductDeliveryMethod {
-                            customer,
-                            product_id,
-                        })
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/increment$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        if let Some(customer_id_s) = params.next() {
-                            if let Some(product_id_s) = params.next() {
-                                if let Ok(customer) =
-                                    customer_id_s.parse().map(CartCustomer::Anonymous)
-                                {
-                                    if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                        return Some(Route::CartIncrementProduct {
-                                            customer,
-                                            product_id,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        None
-                    }
-                )
-                .with_route(r"^/cart/by-user/(\d+)/products/(\d+)/quantity$", |params| {
-                    let mut params = params.into_iter();
-                    if let Some(customer_id_s) = params.next() {
-                        if let Some(product_id_s) = params.next() {
-                            if let Ok(customer) = customer_id_s.parse().map(CartCustomer::User) {
-                                if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                    return Some(Route::CartProductQuantity {
-                                        customer,
-                                        product_id,
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    None
-                })
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/quantity$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        if let Some(customer_id_s) = params.next() {
-                            if let Some(product_id_s) = params.next() {
-                                if let Ok(customer) =
-                                    customer_id_s.parse().map(CartCustomer::Anonymous)
                                 {
                                     if let Ok(product_id) = product_id_s.parse().map(ProductId) {
                                         return Some(Route::CartProductQuantity {
@@ -441,73 +423,78 @@ impl Route {
                             }
                         }
                         None
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-user/(\d+)/products/(\d+)/selection$",
-                    |params| {
+                    })
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/quantity$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::Anonymous)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartProductQuantity {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-user/(\d+)/products/(\d+)/selection$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::User)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartProductSelection {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/selection$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::Anonymous)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartProductSelection {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(r"^/cart/by-user/(\d+)/products/(\d+)/comment$", |params| {
                         let mut params = params.into_iter();
                         if let Some(customer_id_s) = params.next() {
                             if let Some(product_id_s) = params.next() {
                                 if let Ok(customer) = customer_id_s.parse().map(CartCustomer::User)
-                                {
-                                    if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                        return Some(Route::CartProductSelection {
-                                            customer,
-                                            product_id,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        None
-                    }
-                )
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/selection$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        if let Some(customer_id_s) = params.next() {
-                            if let Some(product_id_s) = params.next() {
-                                if let Ok(customer) =
-                                    customer_id_s.parse().map(CartCustomer::Anonymous)
-                                {
-                                    if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                        return Some(Route::CartProductSelection {
-                                            customer,
-                                            product_id,
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        None
-                    }
-                )
-                .with_route(r"^/cart/by-user/(\d+)/products/(\d+)/comment$", |params| {
-                    let mut params = params.into_iter();
-                    if let Some(customer_id_s) = params.next() {
-                        if let Some(product_id_s) = params.next() {
-                            if let Ok(customer) = customer_id_s.parse().map(CartCustomer::User) {
-                                if let Ok(product_id) = product_id_s.parse().map(ProductId) {
-                                    return Some(Route::CartProductComment {
-                                        customer,
-                                        product_id,
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    None
-                })
-                .with_route(
-                    r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/comment$",
-                    |params| {
-                        let mut params = params.into_iter();
-                        if let Some(customer_id_s) = params.next() {
-                            if let Some(product_id_s) = params.next() {
-                                if let Ok(customer) =
-                                    customer_id_s.parse().map(CartCustomer::Anonymous)
                                 {
                                     if let Ok(product_id) = product_id_s.parse().map(ProductId) {
                                         return Some(Route::CartProductComment {
@@ -519,67 +506,90 @@ impl Route {
                             }
                         }
                         None
-                    }
-                )
-                .with_route(r"^/cart/by-user/(\d+)/products$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
-                    .map(|customer| Route::CartProducts { customer }))
-                .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/products$", |params| {
-                    params
+                    })
+                    .with_route(
+                        r"^/cart/by-session/([a-zA-Z0-9-]+)/products/(\d+)/comment$",
+                        |params| {
+                            let mut params = params.into_iter();
+                            if let Some(customer_id_s) = params.next() {
+                                if let Some(product_id_s) = params.next() {
+                                    if let Ok(customer) =
+                                        customer_id_s.parse().map(CartCustomer::Anonymous)
+                                    {
+                                        if let Ok(product_id) = product_id_s.parse().map(ProductId)
+                                        {
+                                            return Some(Route::CartProductComment {
+                                                customer,
+                                                product_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            None
+                        }
+                    )
+                    .with_route(r"^/cart/by-user/(\d+)/products$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
+                        .map(|customer| Route::CartProducts { customer }))
+                    .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/products$", |params| {
+                        params
+                            .get(0)
+                            .and_then(|string_id| {
+                                string_id.parse().ok().map(CartCustomer::Anonymous)
+                            })
+                            .map(|customer| Route::CartProducts { customer })
+                    })
+                    .with_route(r"^/cart/by-user/(\d+)/clear$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
+                        .map(|customer| Route::CartClear { customer }))
+                    .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/clear$", |params| params
                         .get(0)
                         .and_then(|string_id| string_id.parse().ok().map(CartCustomer::Anonymous))
-                        .map(|customer| Route::CartProducts { customer })
-                })
-                .with_route(r"^/cart/by-user/(\d+)/clear$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
-                    .map(|customer| Route::CartClear { customer }))
-                .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/clear$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(CartCustomer::Anonymous))
-                    .map(|customer| Route::CartClear { customer }))
-                .with_route(r"^/cart/merge$", |_| Some(Route::CartMerge))
-                .with_route(r"^/orders$", |_| Some(Route::Orders))
-                .with_route(r"^/orders/create_from_cart$", |_| Some(
-                    Route::OrderFromCart
-                ))
-                .with_route(r"^/orders/create_buy_now$", |_| Some(
-                    Route::OrderFromBuyNow
-                ))
-                .with_route(r"^/orders/create_from_cart/revert$", |_| Some(
-                    Route::OrderFromCartRevert
-                ))
-                .with_route(r"^/orders/search", |_| Some(Route::OrderSearch))
-                .with_route(r"^/orders/by-store/(\d+)$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok())
-                    .map(|store_id| Route::OrdersByStore { store_id }))
-                .with_route(r"^/orders/by-id/([a-zA-Z0-9-]+)$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
-                    .map(|order_id| Route::Order { order_id }))
-                .with_route(r"^/orders/by-slug/(\d+)$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
-                    .map(|order_id| Route::Order { order_id }))
-                .with_route(r"^/orders/by-id/([a-zA-Z0-9-]+)/status$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
-                    .map(|order_id| Route::OrderStatus { order_id }))
-                .with_route(r"^/orders/by-slug/(\d+)/status$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
-                    .map(|order_id| Route::OrderStatus { order_id }))
-                .with_route(r"^/order_diffs/by-id/([a-zA-Z0-9-]+)$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
-                    .map(|order_id| Route::OrderDiff { order_id }))
-                .with_route(r"^/order_diffs/by-slug/(\d+)$", |params| params
-                    .get(0)
-                    .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
-                    .map(|order_id| Route::OrderDiff { order_id }))
-                .build();
+                        .map(|customer| Route::CartClear { customer }))
+                    .with_route(r"^/cart/merge$", |_| Some(Route::CartMerge))
+                    .with_route(r"^/orders$", |_| Some(Route::Orders))
+                    .with_route(r"^/orders/create_from_cart$", |_| Some(
+                        Route::OrderFromCart
+                    ))
+                    .with_route(r"^/orders/create_buy_now$", |_| Some(
+                        Route::OrderFromBuyNow
+                    ))
+                    .with_route(r"^/orders/create_from_cart/revert$", |_| Some(
+                        Route::OrderFromCartRevert
+                    ))
+                    .with_route(r"^/orders/search", |_| Some(Route::OrderSearch))
+                    .with_route(r"^/orders/by-store/(\d+)$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok())
+                        .map(|store_id| Route::OrdersByStore { store_id }))
+                    .with_route(r"^/orders/by-id/([a-zA-Z0-9-]+)$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
+                        .map(|order_id| Route::Order { order_id }))
+                    .with_route(r"^/orders/by-slug/(\d+)$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
+                        .map(|order_id| Route::Order { order_id }))
+                    .with_route(r"^/orders/by-id/([a-zA-Z0-9-]+)/status$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
+                        .map(|order_id| Route::OrderStatus { order_id }))
+                    .with_route(r"^/orders/by-slug/(\d+)/status$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
+                        .map(|order_id| Route::OrderStatus { order_id }))
+                    .with_route(r"^/order_diffs/by-id/([a-zA-Z0-9-]+)$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Id))
+                        .map(|order_id| Route::OrderDiff { order_id }))
+                    .with_route(r"^/order_diffs/by-slug/(\d+)$", |params| params
+                        .get(0)
+                        .and_then(|string_id| string_id.parse().ok().map(OrderIdentifier::Slug))
+                        .map(|order_id| Route::OrderDiff { order_id }))
+                    .build();
         }
 
         ROUTER.test(s)
@@ -702,7 +712,8 @@ impl CartClient for RestApiClient {
                 .post(&self.build_route(&Route::CartIncrementProduct {
                     customer,
                     product_id,
-                })).body(JsonPayload(&CartProductIncrementPayload {
+                }))
+                .body(JsonPayload(&CartProductIncrementPayload {
                     store_id,
                     pre_order,
                     pre_order_days,
@@ -721,7 +732,8 @@ impl CartClient for RestApiClient {
                 .put(&self.build_route(&Route::CartProductQuantity {
                     customer,
                     product_id,
-                })).body(JsonPayload(&CartProductQuantityPayload { value })),
+                }))
+                .body(JsonPayload(&CartProductQuantityPayload { value })),
         )
     }
 
@@ -736,7 +748,8 @@ impl CartClient for RestApiClient {
                 .put(&self.build_route(&Route::CartProductSelection {
                     customer,
                     product_id,
-                })).body(JsonPayload(&CartProductSelectionPayload { value })),
+                }))
+                .body(JsonPayload(&CartProductSelectionPayload { value })),
         )
     }
 
@@ -751,7 +764,8 @@ impl CartClient for RestApiClient {
                 .put(&self.build_route(&Route::CartProductComment {
                     customer,
                     product_id,
-                })).body(JsonPayload(&CartProductCommentPayload { value })),
+                }))
+                .body(JsonPayload(&CartProductCommentPayload { value })),
         )
     }
 
@@ -840,7 +854,8 @@ impl CartClient for RestApiClient {
                 .post(&self.build_route(&Route::CartProductDeliveryMethod {
                     customer,
                     product_id,
-                })).body(JsonPayload(&CartProductDeliveryMethodIdPayload { value })),
+                }))
+                .body(JsonPayload(&CartProductDeliveryMethodIdPayload { value })),
         )
     }
 

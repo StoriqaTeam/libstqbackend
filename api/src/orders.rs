@@ -61,6 +61,7 @@ pub enum Route {
     CartClear {
         customer: CartCustomer,
     },
+    DeleteProductsFromAllCarts,
     CartMerge,
     OrderFromCart,
     OrderFromBuyNow,
@@ -191,6 +192,7 @@ impl RouteBuilder for Route {
                 cart_customer_route(customer),
                 product_id
             ),
+            DeleteProductsFromAllCarts => "cart/delete-products-from-all-carts".to_string(),
             CartClear { customer } => format!("cart/{}/clear", cart_customer_route(customer)),
             CartMerge => "cart/merge".to_string(),
             OrderFromCart => "orders/create_from_cart".to_string(),
@@ -533,6 +535,7 @@ impl Route {
                         .get(0)
                         .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
                         .map(|customer| Route::CartProducts { customer }))
+                    .with_route(r"^/cart/delete-products-from-all-carts$", |_| Some(Route::DeleteProductsFromAllCarts))
                     .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/products$", |params| {
                         params
                             .get(0)
@@ -617,6 +620,11 @@ pub struct CartProductIncrementPayload {
 pub struct CartMergePayload {
     pub from: CartCustomer,
     pub to: CartCustomer,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DeleteProductsFromCartsPayload {
+    pub product_ids: Vec<ProductId>,
 }
 
 /// Service that provides operations for interacting with user carts

@@ -7,10 +7,10 @@ chrono = { version = "*", features = ["serde"] }
 failure = "0.1"
 futures = "0.1"
 geo = { version = "0.10", features = ["use-serde"] }
-hyper = "0.12"
+hyper = "= 0.12.7"
 lazy_static = "*"
 regex = "*"
-reqwest = "0.9.4"
+reqwest = "= 0.9.4"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"

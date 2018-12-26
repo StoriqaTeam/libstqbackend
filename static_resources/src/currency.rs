@@ -48,6 +48,13 @@ impl Currency {
             }
         })
     }
+    
+    pub fn is_fiat(&self) -> bool {
+        match self {
+            Currency::RUB | Currency::EUR | Currency::USD => true,
+            _ => false
+        }
+    }
 }
 
 impl Display for Currency {

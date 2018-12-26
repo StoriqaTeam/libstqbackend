@@ -631,8 +631,8 @@ pub struct DeleteProductsFromCartsPayload {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DeleteDeliveryMethodsFromCartsPayload {
-    pub delivery_method_id: DeliveryMethodId,
+pub struct DeleteDeliveryMethodFromCartsPayload {
+    pub product_ids: Vec<ProductId>,
 }
 
 /// Service that provides operations for interacting with user carts

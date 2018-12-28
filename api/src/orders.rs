@@ -62,6 +62,7 @@ pub enum Route {
         customer: CartCustomer,
     },
     DeleteProductsFromAllCarts,
+    DeleteDeliveryMethodFromAllCarts,
     CartMerge,
     OrderFromCart,
     OrderFromBuyNow,
@@ -193,6 +194,7 @@ impl RouteBuilder for Route {
                 product_id
             ),
             DeleteProductsFromAllCarts => "cart/delete-products-from-all-carts".to_string(),
+            DeleteDeliveryMethodFromAllCarts => "cart/delete-delivery-method-from-all-carts".to_string(),
             CartClear { customer } => format!("cart/{}/clear", cart_customer_route(customer)),
             CartMerge => "cart/merge".to_string(),
             OrderFromCart => "orders/create_from_cart".to_string(),
@@ -536,6 +538,7 @@ impl Route {
                         .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
                         .map(|customer| Route::CartProducts { customer }))
                     .with_route(r"^/cart/delete-products-from-all-carts$", |_| Some(Route::DeleteProductsFromAllCarts))
+                    .with_route(r"^/cart/delete-delivery-method-from-all-carts$", |_| Some(Route::DeleteDeliveryMethodFromAllCarts))
                     .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/products$", |params| {
                         params
                             .get(0)
@@ -624,6 +627,11 @@ pub struct CartMergePayload {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DeleteProductsFromCartsPayload {
+    pub product_ids: Vec<ProductId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DeleteDeliveryMethodFromCartsPayload {
     pub product_ids: Vec<ProductId>,
 }
 

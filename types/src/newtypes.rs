@@ -107,6 +107,8 @@ string_newtype!(CategorySlug);
 
 pub mod stripe {
     string_newtype!(SourceId);
+    string_newtype!(PaymentIntentId);
+    string_newtype!(ChargeId);
 }
 
 uuid_newtype!(RoleEntryId);

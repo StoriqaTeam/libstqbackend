@@ -49,6 +49,10 @@ pub enum OrderState {
     #[serde(rename = "received")]
     Received,
 
+    #[graphql(description = "The customer opened a dispute")]
+    #[serde(rename = "dispute")]
+    Dispute,
+
     #[graphql(description = "Order is complete.")]
     #[serde(rename = "complete")]
     Complete,
@@ -69,6 +73,7 @@ impl FromStr for OrderState {
             "Sent" => OrderState::Sent,
             "Delivered" => OrderState::Delivered,
             "Received" => OrderState::Received,
+            "Dispute" => OrderState::Dispute,
             "Complete" => OrderState::Complete,
             other => {
                 return Err(format!("Unrecognized enum variant: {}", other).to_string().into());
@@ -95,6 +100,7 @@ impl Display for OrderState {
                 Sent => "Sent",
                 Delivered => "Delivered",
                 Received => "Received",
+                Dispute => "Dispute",
                 Complete => "Complete",
             }
         )
@@ -119,6 +125,7 @@ impl ToSql for OrderState {
                 Sent => "sent",
                 Delivered => "delivered",
                 Received => "received",
+                Dispute => "dispute",
                 Complete => "complete",
             },
             out,
@@ -147,6 +154,7 @@ impl<'a> FromSql<'a> for OrderState {
                 "sent" => Sent,
                 "delivered" => Delivered,
                 "received" => Received,
+                "dispute" => Dispute,
                 "complete" => Complete,
                 other => {
                     return Err(Box::new(postgres::error::conversion(

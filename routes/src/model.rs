@@ -41,6 +41,7 @@ pub enum Model {
     WizardStore,
     PaymentIntent,
     Invoice,
+    Customer,
 }
 
 impl fmt::Display for Model {
@@ -82,6 +83,7 @@ impl fmt::Display for Model {
                 Model::WizardStore => "wizard_store",
                 Model::PaymentIntent => "payment_intent",
                 Model::Invoice => "invoice",
+                Model::Customer => "customer",
             }
         )
     }
@@ -125,6 +127,7 @@ impl FromStr for Model {
             "wizard_store" => Ok(Model::WizardStore),
             "payment_intent" => Ok(Model::PaymentIntent),
             "invoice" => Ok(Model::Invoice),
+            "customer" => Ok(Model::Customer),
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
@@ -171,6 +174,7 @@ impl Model {
             Model::WizardStore => "wizard_stores".to_string(),
             Model::PaymentIntent => "payment_intents".to_string(),
             Model::Invoice => "invoices".to_string(),
+            Model::Customer => "customers".to_string(),
         }
     }
 }

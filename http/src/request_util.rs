@@ -12,6 +12,7 @@ header! { (Currency, "Currency") => [String] }
 header! { (CorrelationToken, "Correlation-Token") => [String] }
 header! { (RequestTimeout, "Request-timeout") => [String] }
 header! { (XWSSE, "X-WSSE") => [String] }
+header! { (StripeSignature, "Stripe-Signature") => [String] }
 
 #[derive(Clone, Debug, Fail)]
 pub enum ParseError {

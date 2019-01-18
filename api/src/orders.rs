@@ -9,7 +9,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 use stq_roles;
 use stq_router::{Builder as RouterBuilder, Router};
-use stq_static_resources::{CommitterRole, Currency, OrderState};
+use stq_static_resources::{CommitterRole, Currency, CurrencyType, OrderState};
 use stq_types::*;
 use validator::{Validate, ValidationError};
 
@@ -194,7 +194,9 @@ impl RouteBuilder for Route {
                 product_id
             ),
             DeleteProductsFromAllCarts => "cart/delete-products-from-all-carts".to_string(),
-            DeleteDeliveryMethodFromAllCarts => "cart/delete-delivery-method-from-all-carts".to_string(),
+            DeleteDeliveryMethodFromAllCarts => {
+                "cart/delete-delivery-method-from-all-carts".to_string()
+            }
             CartClear { customer } => format!("cart/{}/clear", cart_customer_route(customer)),
             CartMerge => "cart/merge".to_string(),
             OrderFromCart => "orders/create_from_cart".to_string(),
@@ -537,8 +539,12 @@ impl Route {
                         .get(0)
                         .and_then(|string_id| string_id.parse().ok().map(CartCustomer::User))
                         .map(|customer| Route::CartProducts { customer }))
-                    .with_route(r"^/cart/delete-products-from-all-carts$", |_| Some(Route::DeleteProductsFromAllCarts))
-                    .with_route(r"^/cart/delete-delivery-method-from-all-carts$", |_| Some(Route::DeleteDeliveryMethodFromAllCarts))
+                    .with_route(r"^/cart/delete-products-from-all-carts$", |_| Some(
+                        Route::DeleteProductsFromAllCarts
+                    ))
+                    .with_route(r"^/cart/delete-delivery-method-from-all-carts$", |_| Some(
+                        Route::DeleteDeliveryMethodFromAllCarts
+                    ))
                     .with_route(r"^/cart/by-session/([a-zA-Z0-9-]+)/products$", |params| {
                         params
                             .get(0)
@@ -617,6 +623,7 @@ pub struct CartProductIncrementPayload {
     pub store_id: StoreId,
     pub pre_order: bool,
     pub pre_order_days: i32,
+    pub currency_type: CurrencyType,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -638,7 +645,11 @@ pub struct DeleteDeliveryMethodFromCartsPayload {
 /// Service that provides operations for interacting with user carts
 pub trait CartClient {
     /// Get user's cart contents
-    fn get_cart(&self, customer: CartCustomer) -> ApiFuture<Cart>;
+    fn get_cart(
+        &self,
+        customer: CartCustomer,
+        currency_type: Option<CurrencyType>,
+    ) -> ApiFuture<Cart>;
     /// Increase item's quantity by 1
     fn increment_item(
         &self,
@@ -647,6 +658,7 @@ pub trait CartClient {
         store_id: StoreId,
         pre_order: bool,
         pre_order_days: i32,
+        currency_type: CurrencyType,
     ) -> ApiFuture<Cart>;
     /// Set item to desired quantity in user's cart
     fn set_quantity(
@@ -676,7 +688,12 @@ pub trait CartClient {
     /// Iterate over cart
     fn list(&self, customer: CartCustomer, from: ProductId, count: i32) -> ApiFuture<Cart>;
     /// Merge carts
-    fn merge(&self, from: CartCustomer, to: CartCustomer) -> ApiFuture<Cart>;
+    fn merge(
+        &self,
+        from: CartCustomer,
+        to: CartCustomer,
+        currency_type: Option<CurrencyType>,
+    ) -> ApiFuture<Cart>;
     /// Add coupon
     fn add_coupon(
         &self,
@@ -708,11 +725,22 @@ pub trait CartClient {
 }
 
 impl CartClient for RestApiClient {
-    fn get_cart(&self, customer: CartCustomer) -> ApiFuture<Cart> {
-        http_req(
-            self.http_client
-                .get(&self.build_route(&Route::CartProducts { customer })),
-        )
+    fn get_cart(
+        &self,
+        customer: CartCustomer,
+        currency_type: Option<CurrencyType>,
+    ) -> ApiFuture<Cart> {
+        let url = if let Some(currency_type) = currency_type {
+            format!(
+                "{}?currency_type={}",
+                self.build_route(&Route::CartProducts { customer }),
+                currency_type
+            )
+        } else {
+            self.build_route(&Route::CartProducts { customer })
+        };
+
+        http_req(self.http_client.get(&url))
     }
 
     fn increment_item(
@@ -722,6 +750,7 @@ impl CartClient for RestApiClient {
         store_id: StoreId,
         pre_order: bool,
         pre_order_days: i32,
+        currency_type: CurrencyType,
     ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
@@ -733,6 +762,7 @@ impl CartClient for RestApiClient {
                     store_id,
                     pre_order,
                     pre_order_days,
+                    currency_type,
                 })),
         )
     }
@@ -811,10 +841,25 @@ impl CartClient for RestApiClient {
         )))
     }
 
-    fn merge(&self, from: CartCustomer, to: CartCustomer) -> ApiFuture<Cart> {
+    fn merge(
+        &self,
+        from: CartCustomer,
+        to: CartCustomer,
+        currency_type: Option<CurrencyType>,
+    ) -> ApiFuture<Cart> {
+        let url = if let Some(currency_type) = currency_type {
+            format!(
+                "{}?currency_type={}",
+                self.build_route(&Route::CartMerge),
+                currency_type
+            )
+        } else {
+            self.build_route(&Route::CartMerge)
+        };
+
         http_req(
             self.http_client
-                .post(&self.build_route(&Route::CartMerge))
+                .post(&url)
                 .body(JsonPayload(&CartMergePayload { from, to })),
         )
     }
@@ -937,6 +982,7 @@ pub struct Order {
     pub delivery_price: f64,
     pub shipping_id: Option<ShippingId>,
     pub product_cashback: Option<CashbackPercent>,
+    pub currency_type: CurrencyType,
 }
 
 pub fn validate_phone(phone: &str) -> Result<(), ValidationError> {
@@ -1008,6 +1054,7 @@ pub struct BuyNow {
     pub delivery_info: Option<DeliveryInfo>,
     pub product_info: ProductInfo,
     pub uuid: Uuid,
+    pub currency_type: CurrencyType,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -1039,6 +1086,7 @@ pub struct OrderSearchTerms {
     pub customer: Option<UserId>,
     pub store: Option<StoreId>,
     pub state: Option<OrderState>,
+    pub currency_type: Option<CurrencyType>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

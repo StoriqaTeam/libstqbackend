@@ -1,3 +1,9 @@
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
+use std::io::Write;
+use std::str;
+use std::str::FromStr;
+
 use diesel::expression::bound::Bound;
 use diesel::expression::AsExpression;
 use diesel::pg::Pg;
@@ -7,11 +13,8 @@ use diesel::sql_types::*;
 use diesel::types::{FromSqlRow, IsNull, ToSql};
 use diesel::Queryable;
 use juniper::FieldError;
-use std::error::Error;
-use std::fmt::{self, Display, Formatter};
-use std::io::Write;
-use std::str;
-use std::str::FromStr;
+
+use super::CurrencyType;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, EnumIterator, GraphQLEnum)]
 pub enum Currency {
@@ -48,11 +51,11 @@ impl Currency {
             }
         })
     }
-    
-    pub fn is_fiat(&self) -> bool {
+
+    pub fn currency_type(&self) -> CurrencyType {
         match self {
-            Currency::RUB | Currency::EUR | Currency::USD => true,
-            _ => false
+            Currency::RUB | Currency::EUR | Currency::USD => CurrencyType::Fiat,
+            Currency::BTC | Currency::ETH | Currency::STQ => CurrencyType::Crypto,
         }
     }
 }

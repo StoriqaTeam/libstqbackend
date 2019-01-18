@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::fmt::{self, Debug, Display};
 use std::str::FromStr;
 
-use stq_static_resources::Currency;
+use stq_static_resources::{Currency, CurrencyType};
 use uuid::{self, Uuid};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -27,6 +27,7 @@ pub struct CartItem {
     pub pre_order_days: i32,
     pub coupon_id: Option<CouponId>,
     pub delivery_method_id: Option<DeliveryMethodId>,
+    pub currency_type: CurrencyType,
 }
 
 pub type Cart = HashSet<CartItem>;

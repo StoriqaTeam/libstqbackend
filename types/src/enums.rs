@@ -69,6 +69,7 @@ pub enum BillingRole {
     Superuser,
     User,
     StoreManager,
+    FinancialManager,
 }
 
 impl FromStr for BillingRole {
@@ -78,6 +79,7 @@ impl FromStr for BillingRole {
             "superuser" => Ok(BillingRole::Superuser),
             "user" => Ok(BillingRole::User),
             "store_manager" => Ok(BillingRole::StoreManager),
+            "financial_manager" => Ok(BillingRole::FinancialManager),
             _ => Err(()),
         }
     }
@@ -89,6 +91,7 @@ impl fmt::Display for BillingRole {
             BillingRole::Superuser => write!(f, "superuser"),
             BillingRole::User => write!(f, "user"),
             BillingRole::StoreManager => write!(f, "store_manager"),
+            BillingRole::FinancialManager => write!(f, "financial_manager"),
         }
     }
 }

@@ -189,6 +189,12 @@ pub enum MerchantType {
     User,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, DieselTypes)]
+pub enum BillingType {
+    International,
+    Russia,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, From, Hash)]
 pub enum WarehouseIdentifier {
     Id(WarehouseId),

@@ -93,6 +93,7 @@ i32_newtype!(ShippingRatesId);
 i32_newtype!(ProdAttrId);
 i32_newtype!(AttributeValueId);
 i32_newtype!(EmarsysId);
+i32_newtype!(StoreBillingTypeId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);

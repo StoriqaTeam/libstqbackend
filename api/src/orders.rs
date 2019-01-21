@@ -1033,6 +1033,7 @@ pub struct ConvertCartPayload {
     pub delivery_info: HashMap<ProductId, DeliveryInfo>,
     pub product_info: HashMap<ProductId, ProductInfo>,
     pub uuid: Uuid,
+    pub currency_type: Option<CurrencyType>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Validate)]
@@ -1054,7 +1055,6 @@ pub struct BuyNow {
     pub delivery_info: Option<DeliveryInfo>,
     pub product_info: ProductInfo,
     pub uuid: Uuid,
-    pub currency_type: CurrencyType,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -1114,6 +1114,7 @@ pub trait OrderClient {
         delivery_info: HashMap<ProductId, DeliveryInfo>,
         product_info: HashMap<ProductId, ProductInfo>,
         uuid: Uuid,
+        currency_type: Option<CurrencyType>,
     ) -> ApiFuture<Vec<Order>>;
     fn create_buy_now(
         &self,
@@ -1160,6 +1161,7 @@ impl OrderClient for RestApiClient {
         delivery_info: HashMap<ProductId, DeliveryInfo>,
         product_info: HashMap<ProductId, ProductInfo>,
         uuid: Uuid,
+        currency_type: Option<CurrencyType>,
     ) -> ApiFuture<Vec<Order>> {
         http_req(
             self.http_client
@@ -1176,6 +1178,7 @@ impl OrderClient for RestApiClient {
                     delivery_info,
                     product_info,
                     uuid,
+                    currency_type,
                 })),
         )
     }

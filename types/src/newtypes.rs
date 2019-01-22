@@ -93,6 +93,10 @@ i32_newtype!(ShippingRatesId);
 i32_newtype!(ProdAttrId);
 i32_newtype!(AttributeValueId);
 i32_newtype!(EmarsysId);
+i32_newtype!(StoreBillingTypeId);
+i32_newtype!(InternationalBillingId);
+i32_newtype!(RussiaBillingId);
+i32_newtype!(ProxyCompanyBillingInfoId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
@@ -104,6 +108,7 @@ string_newtype!(CouponCode);
 string_newtype!(BaseProductSlug);
 string_newtype!(StoreSlug);
 string_newtype!(CategorySlug);
+string_newtype!(SwiftId);
 
 pub mod stripe {
     string_newtype!(SourceId);

@@ -96,6 +96,7 @@ i32_newtype!(EmarsysId);
 i32_newtype!(StoreBillingTypeId);
 i32_newtype!(InternationalBillingId);
 i32_newtype!(RussiaBillingId);
+i32_newtype!(ProxyCompanyBillingInfoId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);

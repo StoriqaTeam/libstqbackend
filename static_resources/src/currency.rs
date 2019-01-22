@@ -42,7 +42,7 @@ impl Currency {
         Some(match s {
             "RUB" => Currency::RUB,
             "EUR" => Currency::EUR,
-            "USD" => Currency::USD,
+            "USD" | "USDT" => Currency::USD, // USDT - for EUR/USD exchange pair
             "BTC" => Currency::BTC,
             "ETH" => Currency::ETH,
             "STQ" => Currency::STQ,

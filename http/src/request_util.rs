@@ -9,6 +9,7 @@ use serde_json;
 
 header! { (SessionId, "Session-Id") => [String] }
 header! { (Currency, "Currency") => [String] }
+header! { (FiatCurrency, "FiatCurrency") => [String] }
 header! { (CorrelationToken, "Correlation-Token") => [String] }
 header! { (RequestTimeout, "Request-timeout") => [String] }
 header! { (XWSSE, "X-WSSE") => [String] }

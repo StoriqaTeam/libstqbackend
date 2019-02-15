@@ -28,7 +28,7 @@ pub struct CartItem {
     pub coupon_id: Option<CouponId>,
     pub delivery_method_id: Option<DeliveryMethodId>,
     pub currency_type: CurrencyType,
-    pub user_country_code: Option<String>,
+    pub user_country_code: Option<Alpha3>,
 }
 
 pub type Cart = HashSet<CartItem>;

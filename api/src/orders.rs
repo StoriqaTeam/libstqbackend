@@ -624,6 +624,7 @@ pub struct CartProductIncrementPayload {
     pub pre_order: bool,
     pub pre_order_days: i32,
     pub currency_type: CurrencyType,
+    pub user_country_code: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -659,6 +660,7 @@ pub trait CartClient {
         pre_order: bool,
         pre_order_days: i32,
         currency_type: CurrencyType,
+        user_country_code: Option<String>,
     ) -> ApiFuture<Cart>;
     /// Set item to desired quantity in user's cart
     fn set_quantity(
@@ -751,6 +753,7 @@ impl CartClient for RestApiClient {
         pre_order: bool,
         pre_order_days: i32,
         currency_type: CurrencyType,
+        user_country_code: Option<String>,
     ) -> ApiFuture<Cart> {
         http_req(
             self.http_client
@@ -763,6 +766,7 @@ impl CartClient for RestApiClient {
                     pre_order,
                     pre_order_days,
                     currency_type,
+                    user_country_code,
                 })),
         )
     }

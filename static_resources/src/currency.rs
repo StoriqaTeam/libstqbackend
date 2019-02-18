@@ -39,7 +39,7 @@ impl Currency {
     }
 
     pub fn from_code(s: &str) -> Option<Self> {
-        Some(match s {
+        Some(match s.to_ascii_uppercase().as_str() {
             "RUB" => Currency::RUB,
             "EUR" => Currency::EUR,
             "USD" | "USDT" => Currency::USD, // USDT - for EUR/USD exchange pair

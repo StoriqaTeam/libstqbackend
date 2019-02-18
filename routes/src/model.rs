@@ -46,6 +46,7 @@ pub enum Model {
     InternationalBillingInfo,
     RussiaBillingInfo,
     ProxyCompanyBillingInfo,
+    Payout,
 }
 
 impl fmt::Display for Model {
@@ -92,6 +93,7 @@ impl fmt::Display for Model {
                 Model::InternationalBillingInfo => "international_billing_info",
                 Model::RussiaBillingInfo => "russia_billing_info",
                 Model::ProxyCompanyBillingInfo => "proxy_company_billing_info",
+                Model::Payout => "payout",
             }
         )
     }
@@ -140,6 +142,7 @@ impl FromStr for Model {
             "international_billing_info" => Ok(Model::InternationalBillingInfo),
             "russia_billing_info" => Ok(Model::RussiaBillingInfo),
             "proxy_company_billing_info" => Ok(Model::ProxyCompanyBillingInfo),
+            "payout" => Ok(Model::Payout),
             _ => Err(FieldError::new(
                 "Unknown model",
                 graphql_value!({ "code": 300, "details": {
@@ -191,6 +194,7 @@ impl Model {
             Model::InternationalBillingInfo => "international_billing_infos".to_string(),
             Model::RussiaBillingInfo => "russia_billing_infos".to_string(),
             Model::ProxyCompanyBillingInfo => "proxy_company_billing_infos".to_string(),
+            Model::Payout => "payouts".to_string(),
         }
     }
 }

@@ -131,6 +131,7 @@ uuid_newtype!(ConversionId);
 uuid_newtype!(WarehouseId);
 uuid_newtype!(CurrencyExchangeId);
 uuid_newtype!(PageId);
+uuid_newtype!(PayoutId);
 
 f64_newtype!(ProductPrice);
 f64_newtype!(ExchangeRate);

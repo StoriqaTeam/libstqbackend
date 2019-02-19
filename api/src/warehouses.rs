@@ -30,6 +30,7 @@ pub enum Route {
     StockById {
         stock_id: StockId,
     },
+    Stocks,
     Roles(stq_roles::routing::Route),
 }
 
@@ -72,6 +73,7 @@ impl RouteBuilder for Route {
             ),
             StocksByProductId { product_id } => format!("stocks/by-product-id/{}", product_id),
             StockById { stock_id } => format!("stocks/by-id/{}", stock_id),
+            Stocks => "stocks".to_string(),
             Roles(route) => route.route(),
         }
     }
@@ -130,6 +132,7 @@ impl Route {
                         .get(0)
                         .and_then(|string_id| string_id.parse().ok())
                         .map(|stock_id| Route::StockById { stock_id }))
+                    .with_route(r"^/stocks$", |_| Some(Route::Stocks))
                     .build();
         }
 

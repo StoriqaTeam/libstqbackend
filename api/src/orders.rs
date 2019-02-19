@@ -624,7 +624,22 @@ pub struct CartProductIncrementPayload {
     pub pre_order: bool,
     pub pre_order_days: i32,
     pub currency_type: CurrencyType,
-    pub user_country_code: Option<Alpha3>,
+    pub user_country_code: Option<UserCountryCodeUpdater>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum UserCountryCodeUpdater {
+    Reset,
+    Set { value: Alpha3 },
+}
+
+impl UserCountryCodeUpdater {
+    pub fn as_option(&self) -> Option<Alpha3> {
+        match *self {
+            UserCountryCodeUpdater::Reset => None,
+            UserCountryCodeUpdater::Set { ref value } => Some(value.clone()),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -660,7 +675,7 @@ pub trait CartClient {
         pre_order: bool,
         pre_order_days: i32,
         currency_type: CurrencyType,
-        user_country_code: Option<Alpha3>,
+        user_country_code: Option<UserCountryCodeUpdater>,
     ) -> ApiFuture<Cart>;
     /// Set item to desired quantity in user's cart
     fn set_quantity(
@@ -753,7 +768,7 @@ impl CartClient for RestApiClient {
         pre_order: bool,
         pre_order_days: i32,
         currency_type: CurrencyType,
-        user_country_code: Option<Alpha3>,
+        user_country_code: Option<UserCountryCodeUpdater>,
     ) -> ApiFuture<Cart> {
         http_req(
             self.http_client

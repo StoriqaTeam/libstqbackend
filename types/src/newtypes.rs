@@ -97,6 +97,9 @@ i32_newtype!(StoreBillingTypeId);
 i32_newtype!(InternationalBillingId);
 i32_newtype!(RussiaBillingId);
 i32_newtype!(ProxyCompanyBillingInfoId);
+i32_newtype!(StoreSubscriptionId);
+i32_newtype!(SubscriptionId);
+i32_newtype!(SubscriptionPaymentId);
 
 string_newtype!(WarehouseSlug);
 string_newtype!(CountryLabel);
